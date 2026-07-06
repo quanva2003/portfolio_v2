@@ -43,4 +43,5 @@ next-env.d.ts
 .vercel
 .env*
 .gstack/
-.claude/settings.local.json
+# machine-local Claude Code state (settings + absolute-path symlinks into .agents/)
+.claude/
