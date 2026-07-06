@@ -137,26 +137,62 @@ Investigate the existing token setup first; reuse, don't reinvent. Run /qa.
 **Deliverable:** The page feels alive on scroll and hover; still no WebGL.
 **Skills:** gstack `/plan-eng-review` then `/qa`.
 
-**Prompt:**
+**Prompt** _(locked by /plan-eng-review 2026-07-06 — see GSTACK REVIEW REPORT at the bottom of this file)_:
 
 ```
-Run /plan-eng-review on this before implementing.
+Implement per the eng-review-locked architecture below. yarn ONLY (yarn add, yarn playwright install).
+Deps to add: @gsap/react (useGSAP), @playwright/test (dev). gsap 3.15 already bundles SplitText free.
 
-Add, in this order (atomic commits):
-1. Lenis smooth scroll, synced to GSAP ScrollTrigger (single RAF loop — do not run two RAF loops)
-2. Scroll-reveal for each section (opacity + transform only, staggered), using ScrollTrigger
-3. SplitText line/char reveal on the hero + section headings
-4. A custom cursor (DOM, mix-blend-mode) that scales on interactive elements + magnetic buttons
+Atomic commits, in this order:
 
-Constraints:
-- transform/opacity ONLY on the DOM layer, 60fps
-- Respect prefers-reduced-motion (disable/simplify)
-- Clean up all GSAP contexts on unmount (no leaks / no double-binding in React 18 strict)
+1. MotionProvider — client component mounted in app/layout.tsx (persistent across routes), ~30 explicit lines:
+   - gsap.matchMedia("(prefers-reduced-motion: no-preference)") lives INSIDE the provider and owns
+     Lenis create/destroy (survives the user toggling the OS setting mid-session).
+     Reduced motion = no Lenis at all, native scroll.
+   - new Lenis({ autoRaf: false, anchors: true }); gsap.ticker.add((t) => lenis.raf(t * 1000));
+     gsap.ticker.lagSmoothing(0); lenis.on("scroll", ScrollTrigger.update).
+     ONE RAF loop total: gsap.ticker owns it.
+   - Anchor/skip-link focus management: tabindex="-1" on #main, move focus to the target on anchor
+     arrival; the skip link jumps instantly (never momentum-scrolled).
+
+2. Scroll reveals — sections STAY server components; add data-reveal attributes; ONE client
+   orchestrator (<SectionMotion>, mounted per-page / keyed on usePathname() for Phase 5) runs
+   useGSAP and animates [data-reveal] with opacity+transform staggers, once: true (each trigger
+   self-destroys; content stays visible).
+   Hidden-before-reveal state: inline beforeInteractive script sets html.js; CSS hides [data-reveal]
+   ONLY under html.js AND (prefers-reduced-motion: no-preference) — no-JS and reduced-motion
+   visitors always see full content, and hydrated visitors never see a flash-then-hide.
+   Consume lib/motion.ts tokens (durations/gsapEase) — no new magic numbers.
+
+3. SplitText — SplitText.create with autoSplit: true, mask: "lines", default aria; animations
+   created in the onSplit callback (font-load + fluid-type resize safe). Hero h1 splits by
+   words/lines, NOT chars (Archivo wdth 125 + negative tracking loses kerning between split chars;
+   chars only if a visual diff proves they hold). Elements with data-split are EXCLUDED from
+   data-reveal sweeps — one animation owner per element. Verify the hero at 375px (known
+   display-xl overflow pitfall).
+
+4. Cursor + magnetic — <Cursor> client component rendered only under (pointer: fine) matchMedia;
+   movement via gsap.quickTo (transform/opacity only); scale via ONE document-level delegation
+   listener matching closest('a, button, [data-cursor]'). ONE <Magnetic> wrapper component
+   (quickTo pull, spring release) applied ONLY to the three ContactFooter pill links —
+   block/pill elements only, NEVER inline text links.
+
+5. Tests + CI — Playwright specs: (1) reduced-motion emulation → fully static page, no Lenis, no
+   cursor, all content visible; (2) JS disabled → all content visible; (3) touch emulation → no
+   cursor element; (4) pointer:fine → cursor present + scales on link hover; (5) nav anchor click →
+   asserts FOCUS lands on the target section (not just scrollY); (6) all sections reach visible
+   state after scroll; (7) exactly one RAF driver (gsap.ticker) active; (8) after orchestrator
+   teardown, ScrollTrigger.getAll().length === 0. GitHub Actions workflow runs build + playwright
+   on every push. 60fps stays a manual perf-trace check in /qa (not a fake headless assertion).
+
+Constraints (unchanged): transform/opacity ONLY on the DOM layer, 60fps; useGSAP() everywhere for
+strict-mode-safe cleanup. NOTE: styles/globals.css:188 only neuters CSS animations — it does NOT
+cover GSAP/Lenis; the provider's matchMedia is the real reduced-motion gate.
 
 Run /qa.
 ```
 
-**QA gate:** one RAF loop only · 60fps on scroll · reduced-motion respected · no GSAP leaks in strict mode · cursor works on all breakpoints (hidden on touch).
+**QA gate:** one RAF loop only (spec-asserted) · 60fps on scroll (perf trace) · reduced-motion respected end-to-end · no GSAP leaks in strict mode (spec-asserted) · cursor hidden on touch · skip link + nav anchors move focus · Playwright suite green in CI.
 
 ---
 
@@ -183,11 +219,15 @@ Rules:
 - Clamp devicePixelRatio (max ~2), throttle where possible, keep it 60fps on desktop
 - Everything must degrade gracefully if WebGL is unavailable (fall back to the Phase 2 static hero)
 - Investigate before fixing any perf regression; measure, don't guess
+- Single-RAF contract (locked in Phase 3 eng review): the R3F <Canvas> uses frameloop="never" and is
+  advanced from the existing gsap.ticker in MotionProvider — never its own internal RAF. Re-evaluate
+  gsap.ticker.lagSmoothing(0) once the shader joins the ticker (a dropped WebGL frame must not yank
+  the scroll clock).
 
 Run /qa after each step and a final /qa at the end.
 ```
 
-**QA gate:** 60fps desktop / ~45fps mobile · DPR clamped · graceful WebGL fallback · no memory growth over 2 min · CLS unaffected.
+**QA gate:** 60fps desktop / ~45fps mobile · DPR clamped · graceful WebGL fallback · no memory growth over 2 min · CLS unaffected · still exactly ONE RAF loop with the canvas mounted · cursor mix-blend-mode cost re-verified over the live canvas (non-blend cursor fallback stays one line away).
 
 ---
 
@@ -278,3 +318,18 @@ Run /ship.
 **Advice:** Phases 0–3 give you a genuinely nice site even if you stop there. Phase 4 is where the
 OHZI magic lives and where most of the risk/time is — timebox the shader work and keep the static
 fallback from Phase 2 wired the whole way, so you always have something shippable.
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | — | — |
+| Codex Review | `/codex review` | Independent 2nd opinion | 0 | — | — |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | CLEAN (PLAN, 2026-07-06) | 24 issues (9 section findings + 16 test gaps consolidated), 0 critical gaps — all resolved & folded into Phase 3/4 |
+| Design Review | `/plan-design-review` | UI/UX gaps | 0 | — | — |
+| DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | — |
+
+- **CROSS-MODEL:** Outside voice (Claude subagent; Codex not installed) challenged 3 locked decisions — hidden-state flash (accepted: html.js hybrid), magnetic targets (accepted: 3 ContactFooter pills only), test rot without CI (accepted: GitHub Actions + RAF/leak assertions) — plus 7 additive refinements, all accepted and folded.
+- **VERDICT:** ENG CLEARED — ready to implement Phase 3.
+
+NO UNRESOLVED DECISIONS
