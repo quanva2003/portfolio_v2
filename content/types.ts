@@ -38,6 +38,31 @@ export interface Contact {
   linkedin: string;
 }
 
+export interface NavLink {
+  label: string;
+  href: string;
+}
+
+/** Chrome / microcopy strings so no copy is ever inlined in JSX. */
+export interface UiStrings {
+  skipToContent: string;
+  navLabel: string;
+  wordmark: string;
+  navLinks: NavLink[];
+  sections: {
+    work: string;
+    experience: string;
+    skills: string;
+    contact: string;
+  };
+  /** Label for an open-ended date range on the experience timeline. */
+  present: string;
+  contactLinks: {
+    github: string;
+    linkedin: string;
+  };
+}
+
 export interface About {
   headline: string;
   paragraphs: string[];

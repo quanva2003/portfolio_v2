@@ -7,7 +7,7 @@ export const experience: ExperienceEntry[] = [
     start: "2024",
     end: null,
     summary:
-      "Shipping production features across web, tablet and mobile — real-time ERP and logistics platforms.",
+      "Shipping production features across web, tablet and mobile: real-time ERP and logistics platforms.",
   },
   {
     company: "General Era",

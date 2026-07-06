@@ -47,7 +47,7 @@ export const projects: Project[] = [
   {
     slug: "comzone",
     name: "Comzone",
-    summary: "Comic marketplace with real-time auctions — university capstone project.",
+    summary: "Comic marketplace with real-time auctions, built as a university capstone.",
     description:
       "A comic marketplace featuring real-time auctions, VNPay and ZaloPay payment integration and GHN shipping API, with Socket.IO driving the live auction experience.",
     role: "Front-End Developer",
