@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 const TYPE_RAMP = [
   {
     token: "text-display-xl",
-    clamp: "clamp(3.25rem, 6.4vw, 8.5rem)",
+    clamp: "clamp(2.75rem, 7.3vw, 8.5rem)",
     className: "font-display text-display-xl uppercase",
     sample: "Van Anh Quan",
   },
