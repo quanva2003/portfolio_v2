@@ -2,11 +2,13 @@ import { site } from "@/content";
 
 export default function Hero() {
   return (
-    <section className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-      <p className="text-sm tracking-widest uppercase opacity-50">{site.location}</p>
-      <h1 className="text-5xl font-semibold tracking-tight sm:text-7xl">{site.name}</h1>
-      <h2 className="text-xl opacity-80 sm:text-2xl">{site.title}</h2>
-      <p className="max-w-md text-sm opacity-50">{site.tagline}</p>
+    <section className="max-w-page px-gutter pb-block mx-auto flex min-h-dvh w-full flex-col justify-end gap-6">
+      <p className="text-micro text-fg-muted font-mono uppercase">{site.location}</p>
+      <h1 className="font-display text-display-xl uppercase">{site.name}</h1>
+      <div className="flex flex-col gap-2">
+        <h2 className="text-title text-fg">{site.title}</h2>
+        <p className="text-body text-fg-muted max-w-[45ch]">{site.tagline}</p>
+      </div>
     </section>
   );
 }

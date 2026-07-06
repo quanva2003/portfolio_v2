@@ -1,26 +1,195 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens: dark editorial system (ohzi.io-inspired).
+ * Theme is dark-locked at the page level; there is no light mode by design.
+ *
+ * Shape rule: surfaces and media are sharp (radius 0 or 2px),
+ * interactive controls are pill. Nothing in between.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+
+  /* motion durations (no Tailwind namespace; consume via duration-(--dur-*)) */
+  --dur-fast: 150ms; /* hover, focus, tactile press */
+  --dur-base: 300ms; /* most UI transitions */
+  --dur-gentle: 500ms; /* spring settle, panel moves */
+  --dur-slow: 700ms; /* section reveals */
+  --dur-reveal: 1000ms; /* hero choreography */
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* fonts arrive as next/font variables from app/layout.tsx */
+  --font-display: var(--font-archivo);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  /* ---- color: locked cool-gray ramp + one ember accent ---- */
+  --color-*: initial;
+  --color-ink: #0a0b0d; /* page base, near-black */
+  --color-surface: #101114; /* section tint within same family */
+  --color-raised: #17181c; /* elevated panels, code, inputs */
+  --color-line: #26282d; /* hairline borders */
+  --color-fg: #e9eaec; /* primary text, ~15:1 on ink */
+  --color-fg-muted: #9ba0a8; /* secondary text, ~7:1 on ink */
+  --color-fg-faint: #62666e; /* large decorative text only, fails AA at body size */
+  --color-ember: #f75a2c; /* the single accent, ~5.6:1 on ink */
+  --color-ember-deep: #c93d16; /* accent pressed state, borders on ember */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* ---- fluid type ramp ---- */
+  --text-display-xl: clamp(3.25rem, 1.9rem + 6.4vw, 8.5rem);
+  --text-display-xl--line-height: 0.95;
+  --text-display-xl--letter-spacing: -0.03em;
+  --text-display-xl--font-weight: 800;
+
+  --text-display: clamp(2.5rem, 1.7rem + 3.7vw, 5.5rem);
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.025em;
+  --text-display--font-weight: 700;
+
+  --text-headline: clamp(1.875rem, 1.5rem + 1.7vw, 3.25rem);
+  --text-headline--line-height: 1.08;
+  --text-headline--letter-spacing: -0.02em;
+  --text-headline--font-weight: 700;
+
+  --text-title: clamp(1.375rem, 1.25rem + 0.75vw, 2rem);
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.01em;
+  --text-title--font-weight: 600;
+
+  --text-lead: clamp(1.125rem, 1.06rem + 0.4vw, 1.375rem);
+  --text-lead--line-height: 1.5;
+
+  --text-body: 1rem;
+  --text-body--line-height: 1.65;
+
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.5;
+
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1.4;
+  --text-micro--letter-spacing: 0.08em;
+
+  /* ---- layout ---- */
+  --spacing-gutter: clamp(1.25rem, 4vw, 4rem); /* page edge padding */
+  --spacing-section: clamp(6rem, 5rem + 9vw, 12rem); /* between sections */
+  --spacing-block: clamp(2.5rem, 2rem + 3vw, 5rem); /* inside a section */
+  --container-page: 90rem; /* 1440px content cap */
+
+  /* ---- shape: sharp surfaces, pill controls ---- */
+  --radius-none: 0px;
+  --radius-media: 2px;
+  --radius-pill: 9999px;
+
+  /* ---- motion: easing. Springs are real damped-oscillator curves. ---- */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+  /* spring(stiffness 260, damping 30): near-critical snap, settles ~460ms */
+  --ease-spring-snap: linear(
+    0,
+    0.066 5.6%,
+    0.206 11.1%,
+    0.364 16.7%,
+    0.512 22.2%,
+    0.638 27.8%,
+    0.739 33.3%,
+    0.816 38.9%,
+    0.874 44.4%,
+    0.915 50%,
+    0.944 55.6%,
+    0.964 61.1%,
+    0.978 66.7%,
+    0.987 72.2%,
+    0.992 77.8%,
+    0.996 83.3%,
+    0.998 88.9%,
+    0.999 94.4%,
+    1 100%
+  );
+  /* spring(stiffness 170, damping 26): soft glide for reveals, settles ~530ms */
+  --ease-spring-soft: linear(
+    0,
+    0.058 5.6%,
+    0.181 11.1%,
+    0.321 16.7%,
+    0.456 22.2%,
+    0.574 27.8%,
+    0.673 33.3%,
+    0.752 38.9%,
+    0.814 44.4%,
+    0.862 50%,
+    0.898 55.6%,
+    0.925 61.1%,
+    0.946 66.7%,
+    0.961 72.2%,
+    0.972 77.8%,
+    0.98 83.3%,
+    0.986 88.9%,
+    0.993 94.4%,
+    1 100%
+  );
+  /* spring(stiffness 300, damping 16): visible overshoot, settles ~860ms */
+  --ease-spring-bounce: linear(
+    0,
+    0.157 4.2%,
+    0.486 8.3%,
+    0.818 12.5%,
+    1.057 16.7%,
+    1.175 20.8%,
+    1.191 25%,
+    1.146 29.2%,
+    1.079 33.3%,
+    1.018 37.5%,
+    0.979 41.7%,
+    0.963 45.8%,
+    0.965 50%,
+    0.976 54.2%,
+    0.989 58.3%,
+    0.999 62.5%,
+    1.005 66.7%,
+    1.007 70.8%,
+    1.006 75%,
+    1.004 79.2%,
+    1.001 83.3%,
+    1 100%
+  );
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-ink);
+  color: var(--color-fg);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-ember);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ember);
+  outline-offset: 3px;
+}
+
+/* display face: Archivo variable, pushed to its expanded width */
+.font-display {
+  font-variation-settings: "wdth" 125;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
