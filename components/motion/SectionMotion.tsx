@@ -43,7 +43,13 @@ export default function SectionMotion() {
       ScrollTrigger.batch(blocks, {
         start: "top 85%",
         once: true,
-        onEnter: (batch) =>
+        // GSAP only self-kills a `once:true` trigger when its crossing point
+        // isn't "clipped" by the scroll boundary. Elements near the very
+        // bottom of the page (the footer) hit max-scroll before reaching
+        // their trigger point, so the crossing IS clipped: the callback
+        // still fires, but the auto-kill is skipped and the trigger leaks.
+        // Killing explicitly here makes the "once" contract deterministic.
+        onEnter: (batch, triggers) => {
           gsap.to(batch, {
             opacity: 1,
             y: 0,
@@ -51,7 +57,9 @@ export default function SectionMotion() {
             ease: gsapEase.outExpo,
             stagger: 0.08,
             overwrite: true,
-          }),
+          });
+          triggers.forEach((trigger) => trigger.kill());
+        },
       });
     });
 
@@ -75,6 +83,10 @@ export default function SectionMotion() {
               ease: gsapEase.outExpo,
               stagger: 0.06,
               scrollTrigger: { trigger: heading, start: "top 85%", once: true },
+              // Same clipped-crossing gap as the reveal batch above (headings
+              // near the footer never get an unclipped auto-kill) — kill the
+              // trigger ourselves once the reveal has actually played.
+              onComplete: () => rise.scrollTrigger?.kill(),
             });
             // words now sit hidden behind the line masks — the CSS
             // pre-hydration hidden state has done its job, lift it.
@@ -84,6 +96,13 @@ export default function SectionMotion() {
         });
       });
     });
+
+    // Headings can reflow when the real webfont swaps in (autoSplit re-splits
+    // on that same signal), which shifts every element below them in normal
+    // flow. The reveal batch above computed its "top 85%" positions before
+    // that swap — without a refresh, elements past a reflowed heading can
+    // sit above their trigger's start line forever, and once:true never fires.
+    document.fonts.ready.then(() => ScrollTrigger.refresh());
   });
 
   return null;
