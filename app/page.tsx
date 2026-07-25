@@ -1,4 +1,5 @@
 import { ui } from "@/content";
+import SectionMotion from "@/components/motion/SectionMotion";
 import About from "@/components/About";
 import ContactFooter from "@/components/ContactFooter";
 import Experience from "@/components/Experience";
@@ -22,6 +23,7 @@ export default function Home() {
        * no layout space, so mounting the canvas here later causes zero CLS.
        */}
       <div id="webgl-layer" aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10" />
+      <SectionMotion />
       <SiteHeader />
       <main id="main" tabIndex={-1} className="max-w-page px-gutter mx-auto w-full">
         <Hero />

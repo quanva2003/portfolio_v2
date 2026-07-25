@@ -97,12 +97,12 @@ export default function SelectedWork() {
       </h2>
       <ul className="mt-block grid grid-cols-1 gap-x-6 gap-y-16 lg:grid-cols-12">
         {flagship.map((project) => (
-          <li key={project.slug} className="lg:col-span-12">
+          <li data-reveal key={project.slug} className="lg:col-span-12">
             <FlagshipCard project={project} />
           </li>
         ))}
         {support.map((project, i) => (
-          <li key={project.slug} className={SUPPORT_SPANS[i % SUPPORT_SPANS.length]}>
+          <li data-reveal key={project.slug} className={SUPPORT_SPANS[i % SUPPORT_SPANS.length]}>
             <SupportCard project={project} />
           </li>
         ))}

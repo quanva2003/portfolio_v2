@@ -192,6 +192,20 @@ body {
   font-variation-settings: "wdth" 125;
 }
 
+/* Hidden-before-reveal contract (Phase 3, eng review F1): reveal targets are
+   hidden ONLY when JS is confirmed running (html.js, set by the inline script
+   in app/layout.tsx) AND motion is allowed. No-JS, broken-JS and
+   reduced-motion visitors always get fully visible content; GSAP animates
+   opacity from this state and leaves the final value inline. */
+@media (prefers-reduced-motion: no-preference) {
+  html.js [data-reveal] {
+    opacity: 0;
+  }
+}
+
+/* CSS-only guard. This neuters CSS animations/transitions — it does NOT
+   cover GSAP/Lenis/SplitText; their gate is gsap.matchMedia inside
+   components/motion/ (MotionProvider, SectionMotion). */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

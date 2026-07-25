@@ -14,6 +14,7 @@ export default function Experience() {
       <ol className="mt-block flex flex-col">
         {experience.map((entry) => (
           <li
+            data-reveal
             key={`${entry.company}-${entry.start}`}
             className="border-line grid gap-2 border-t py-8 first:border-t-0 first:pt-0 md:grid-cols-[10rem_1fr] md:gap-8"
           >

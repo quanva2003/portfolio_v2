@@ -17,6 +17,7 @@ export default function ContactFooter() {
         </h2>
         {/* the one ember-primary action on the page */}
         <a
+          data-reveal
           href={`mailto:${contact.email}`}
           className="group font-display text-headline hover:text-ember mt-block inline-flex flex-wrap items-baseline gap-2 break-all transition-colors duration-(--dur-fast)"
         >
@@ -26,7 +27,7 @@ export default function ContactFooter() {
             className="ease-spring-snap size-[0.6em] shrink-0 self-center transition-transform duration-(--dur-gentle) group-hover:translate-x-1 group-hover:-translate-y-1"
           />
         </a>
-        <ul className="mt-block flex flex-wrap gap-3">
+        <ul data-reveal className="mt-block flex flex-wrap gap-3">
           <li>
             <a
               href={contact.github}

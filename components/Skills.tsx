@@ -13,7 +13,7 @@ export default function Skills() {
       </h2>
       <div className="mt-block grid gap-x-8 gap-y-10 sm:grid-cols-2">
         {skills.map((group) => (
-          <div key={group.label}>
+          <div data-reveal key={group.label}>
             <h3 className="text-small text-fg-muted">{group.label}</h3>
             <ul className="mt-4 flex flex-wrap gap-2">
               {group.items.map((item) => (

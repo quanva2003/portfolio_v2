@@ -13,12 +13,12 @@ export default function About() {
       </h2>
       <div className="mt-block flex max-w-[65ch] flex-col gap-5">
         {about.paragraphs.map((paragraph) => (
-          <p key={paragraph} className="text-lead text-fg-muted">
+          <p data-reveal key={paragraph} className="text-lead text-fg-muted">
             {paragraph}
           </p>
         ))}
       </div>
-      <p className="text-small text-fg-muted mt-10 font-mono">
+      <p data-reveal className="text-small text-fg-muted mt-10 font-mono">
         {about.education.degree} · {about.education.school}
       </p>
     </section>

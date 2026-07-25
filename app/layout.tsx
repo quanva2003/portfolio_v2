@@ -42,6 +42,16 @@ export default function RootLayout({
       <body
         className={`${archivo.variable} ${geistSans.variable} ${geistMono.variable} bg-ink text-fg antialiased`}
       >
+        {/*
+         * js-flag, parsed before any content below renders: CSS may only
+         * hide reveal targets when JS is confirmed running (eng review F1).
+         * No-JS visitors never match `html.js` and always see full content.
+         */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.classList.add('js')",
+          }}
+        />
         <MotionProvider />
         {children}
       </body>
