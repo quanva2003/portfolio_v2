@@ -1,5 +1,6 @@
 import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
 import { contact, site, ui } from "@/content";
+import Magnetic from "@/components/motion/Magnetic";
 
 export default function ContactFooter() {
   const year = new Date().getFullYear();
@@ -29,32 +30,38 @@ export default function ContactFooter() {
         </a>
         <ul data-reveal className="mt-block flex flex-wrap gap-3">
           <li>
-            <a
-              href={contact.github}
-              rel="noreferrer"
-              target="_blank"
-              className="rounded-pill border-line text-small text-fg hover:border-fg-muted hover:bg-raised inline-block border px-6 py-2.5 transition-colors duration-(--dur-fast) active:scale-[0.98]"
-            >
-              {ui.contactLinks.github}
-            </a>
+            <Magnetic>
+              <a
+                href={contact.github}
+                rel="noreferrer"
+                target="_blank"
+                className="rounded-pill border-line text-small text-fg hover:border-fg-muted hover:bg-raised inline-block border px-6 py-2.5 transition-colors duration-(--dur-fast) active:scale-[0.98]"
+              >
+                {ui.contactLinks.github}
+              </a>
+            </Magnetic>
           </li>
           <li>
-            <a
-              href={contact.linkedin}
-              rel="noreferrer"
-              target="_blank"
-              className="rounded-pill border-line text-small text-fg hover:border-fg-muted hover:bg-raised inline-block border px-6 py-2.5 transition-colors duration-(--dur-fast) active:scale-[0.98]"
-            >
-              {ui.contactLinks.linkedin}
-            </a>
+            <Magnetic>
+              <a
+                href={contact.linkedin}
+                rel="noreferrer"
+                target="_blank"
+                className="rounded-pill border-line text-small text-fg hover:border-fg-muted hover:bg-raised inline-block border px-6 py-2.5 transition-colors duration-(--dur-fast) active:scale-[0.98]"
+              >
+                {ui.contactLinks.linkedin}
+              </a>
+            </Magnetic>
           </li>
           <li>
-            <a
-              href={`tel:${contact.phone}`}
-              className="rounded-pill border-line text-small text-fg hover:border-fg-muted hover:bg-raised inline-block border px-6 py-2.5 font-mono transition-colors duration-(--dur-fast) active:scale-[0.98]"
-            >
-              {contact.phone}
-            </a>
+            <Magnetic>
+              <a
+                href={`tel:${contact.phone}`}
+                className="rounded-pill border-line text-small text-fg hover:border-fg-muted hover:bg-raised inline-block border px-6 py-2.5 font-mono transition-colors duration-(--dur-fast) active:scale-[0.98]"
+              >
+                {contact.phone}
+              </a>
+            </Magnetic>
           </li>
         </ul>
       </div>

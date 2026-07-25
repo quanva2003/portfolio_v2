@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import { site } from "@/content";
+import Cursor from "@/components/motion/Cursor";
 import MotionProvider from "@/components/motion/MotionProvider";
 import "@/styles/globals.css";
 
@@ -53,6 +54,7 @@ export default function RootLayout({
           }}
         />
         <MotionProvider />
+        <Cursor />
         {children}
       </body>
     </html>

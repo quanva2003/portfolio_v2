@@ -187,6 +187,13 @@ body {
   outline: none;
 }
 
+/* While the custom cursor is mounted (fine pointer + motion allowed), the
+   native cursor hides everywhere — the blend-mode dot IS the cursor. The
+   class comes and goes with <Cursor/>, so touch/reduced-motion never match. */
+html.custom-cursor * {
+  cursor: none !important;
+}
+
 /* display face: Archivo variable, pushed to its expanded width */
 .font-display {
   font-variation-settings: "wdth" 125;

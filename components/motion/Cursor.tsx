@@ -1,0 +1,92 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { durations, gsapEase } from "@/lib/motion";
+
+gsap.registerPlugin(useGSAP);
+
+/** Cursor exists only for fine pointers with motion allowed (QA gate: hidden on touch). */
+const ACTIVE_QUERY = "(pointer: fine) and (prefers-reduced-motion: no-preference)";
+
+/** One delegated listener decides what counts as interactive — future links/buttons are covered automatically (eng review 7A). */
+const INTERACTIVE = "a, button, [data-cursor]";
+
+export default function Cursor() {
+  const dotRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(ACTIVE_QUERY);
+    const sync = () => setActive(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  useGSAP(
+    () => {
+      const dot = dotRef.current;
+      if (!active || !dot) return;
+
+      document.documentElement.classList.add("custom-cursor");
+      gsap.set(dot, { xPercent: -50, yPercent: -50, autoAlpha: 0, scale: 1 });
+
+      const xTo = gsap.quickTo(dot, "x", { duration: durations.base, ease: gsapEase.outExpo });
+      const yTo = gsap.quickTo(dot, "y", { duration: durations.base, ease: gsapEase.outExpo });
+      const scaleTo = gsap.quickTo(dot, "scale", {
+        duration: durations.base,
+        ease: gsapEase.outExpo,
+      });
+
+      let shown = false;
+      const onMove = (event: PointerEvent) => {
+        xTo(event.clientX);
+        yTo(event.clientY);
+        if (!shown) {
+          shown = true;
+          gsap.to(dot, { autoAlpha: 1, duration: durations.fast });
+        }
+      };
+
+      let hovering = false;
+      const onOver = (event: PointerEvent) => {
+        const hit = Boolean((event.target as Element | null)?.closest?.(INTERACTIVE));
+        if (hit === hovering) return;
+        hovering = hit;
+        scaleTo(hit ? 2.5 : 1);
+        dot.dataset.state = hit ? "hover" : "default";
+      };
+
+      const onLeaveWindow = () => {
+        shown = false;
+        gsap.to(dot, { autoAlpha: 0, duration: durations.fast });
+      };
+
+      window.addEventListener("pointermove", onMove, { passive: true });
+      document.addEventListener("pointerover", onOver, { passive: true });
+      document.documentElement.addEventListener("pointerleave", onLeaveWindow);
+
+      return () => {
+        window.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerover", onOver);
+        document.documentElement.removeEventListener("pointerleave", onLeaveWindow);
+        document.documentElement.classList.remove("custom-cursor");
+      };
+    },
+    { dependencies: [active] },
+  );
+
+  if (!active) return null;
+
+  return (
+    <div
+      ref={dotRef}
+      data-cursor-dot
+      data-state="default"
+      aria-hidden="true"
+      className="rounded-pill bg-white pointer-events-none fixed top-0 left-0 z-[70] size-3 opacity-0 mix-blend-difference"
+    />
+  );
+}
