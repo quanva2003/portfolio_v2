@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { durations, gsapEase } from "@/lib/motion";
+import { subscribePointer, type PointerPosition } from "@/lib/webgl/pointer";
 
 gsap.registerPlugin(useGSAP);
 
@@ -50,9 +51,9 @@ export default function Cursor() {
       });
 
       let shown = false;
-      const onMove = (event: PointerEvent) => {
-        xTo(event.clientX);
-        yTo(event.clientY);
+      const onMove = (pos: PointerPosition) => {
+        xTo(pos.x);
+        yTo(pos.y);
         if (!shown) {
           shown = true;
           gsap.to(dot, { autoAlpha: 1, duration: durations.fast });
@@ -75,12 +76,12 @@ export default function Cursor() {
         gsap.to(dot, { autoAlpha: 0, duration: durations.fast });
       };
 
-      window.addEventListener("pointermove", onMove, { passive: true });
+      const unsubscribeMove = subscribePointer(onMove);
       document.addEventListener("pointerover", onOver, { passive: true });
       document.documentElement.addEventListener("pointerleave", onLeaveWindow);
 
       return () => {
-        window.removeEventListener("pointermove", onMove);
+        unsubscribeMove();
         document.removeEventListener("pointerover", onOver);
         document.documentElement.removeEventListener("pointerleave", onLeaveWindow);
         document.documentElement.classList.remove("custom-cursor");

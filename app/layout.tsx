@@ -3,6 +3,7 @@ import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import { site } from "@/content";
 import Cursor from "@/components/motion/Cursor";
 import MotionProvider from "@/components/motion/MotionProvider";
+import WebGLBackground from "@/components/webgl/WebGLBackground";
 import "@/styles/globals.css";
 
 const archivo = Archivo({
@@ -54,6 +55,7 @@ export default function RootLayout({
           }}
         />
         <MotionProvider />
+        <WebGLBackground />
         <Cursor />
         {children}
       </body>
