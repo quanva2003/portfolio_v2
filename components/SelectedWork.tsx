@@ -86,7 +86,12 @@ export default function SelectedWork() {
   const support = ordered.filter((p) => !p.flagship);
 
   return (
-    <section id="work" aria-labelledby="work-heading" className="border-line py-section border-t">
+    <section
+      id="work"
+      tabIndex={-1}
+      aria-labelledby="work-heading"
+      className="border-line py-section border-t"
+    >
       <h2 id="work-heading" className="font-display text-display uppercase">
         {ui.sections.work}
       </h2>

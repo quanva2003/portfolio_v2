@@ -180,6 +180,13 @@ body {
   outline-offset: 3px;
 }
 
+/* Anchor/skip-link targets receive programmatic focus (tabindex="-1") so
+   keyboard users land where they navigated; the section itself should not
+   paint a giant focus ring — the next Tab lands on real content inside. */
+[tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
 /* display face: Archivo variable, pushed to its expanded width */
 .font-display {
   font-variation-settings: "wdth" 125;

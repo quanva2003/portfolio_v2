@@ -7,6 +7,7 @@ export default function ContactFooter() {
   return (
     <footer
       id="contact"
+      tabIndex={-1}
       aria-labelledby="contact-heading"
       className="max-w-page px-gutter mx-auto w-full"
     >

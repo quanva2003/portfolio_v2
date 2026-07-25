@@ -12,6 +12,7 @@ export default function Home() {
     <>
       <a
         href="#main"
+        data-skip-link
         className="rounded-pill bg-ember text-small text-ink fixed top-4 left-4 z-50 -translate-y-24 px-5 py-2.5 font-medium transition-transform duration-(--dur-fast) focus-visible:translate-y-0"
       >
         {ui.skipToContent}
@@ -22,7 +23,7 @@ export default function Home() {
        */}
       <div id="webgl-layer" aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10" />
       <SiteHeader />
-      <main id="main" className="max-w-page px-gutter mx-auto w-full">
+      <main id="main" tabIndex={-1} className="max-w-page px-gutter mx-auto w-full">
         <Hero />
         <About />
         <SelectedWork />

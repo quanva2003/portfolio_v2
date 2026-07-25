@@ -2,7 +2,12 @@ import { about } from "@/content";
 
 export default function About() {
   return (
-    <section id="about" aria-labelledby="about-heading" className="border-line py-section border-t">
+    <section
+      id="about"
+      tabIndex={-1}
+      aria-labelledby="about-heading"
+      className="border-line py-section border-t"
+    >
       <h2 id="about-heading" className="text-headline max-w-[26ch]">
         {about.headline}
       </h2>

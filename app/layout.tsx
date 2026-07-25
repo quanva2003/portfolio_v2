@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import { site } from "@/content";
+import MotionProvider from "@/components/motion/MotionProvider";
 import "@/styles/globals.css";
 
 const archivo = Archivo({
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body
         className={`${archivo.variable} ${geistSans.variable} ${geistMono.variable} bg-ink text-fg antialiased`}
       >
+        <MotionProvider />
         {children}
       </body>
     </html>

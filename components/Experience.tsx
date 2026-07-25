@@ -4,6 +4,7 @@ export default function Experience() {
   return (
     <section
       id="experience"
+      tabIndex={-1}
       aria-labelledby="experience-heading"
       className="border-line py-section border-t"
     >

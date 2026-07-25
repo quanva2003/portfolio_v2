@@ -4,6 +4,7 @@ export default function Skills() {
   return (
     <section
       id="skills"
+      tabIndex={-1}
       aria-labelledby="skills-heading"
       className="border-line py-section border-t"
     >
