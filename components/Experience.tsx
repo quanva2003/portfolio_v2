@@ -8,7 +8,7 @@ export default function Experience() {
       aria-labelledby="experience-heading"
       className="border-line py-section border-t"
     >
-      <h2 id="experience-heading" className="font-display text-display uppercase">
+      <h2 data-split id="experience-heading" className="font-display text-display uppercase">
         {ui.sections.experience}
       </h2>
       <ol className="mt-block flex flex-col">

@@ -8,7 +8,7 @@ export default function About() {
       aria-labelledby="about-heading"
       className="border-line py-section border-t"
     >
-      <h2 id="about-heading" className="text-headline max-w-[26ch]">
+      <h2 data-split id="about-heading" className="text-headline max-w-[26ch]">
         {about.headline}
       </h2>
       <div className="mt-block flex max-w-[65ch] flex-col gap-5">

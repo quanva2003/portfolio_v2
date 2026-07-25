@@ -201,6 +201,11 @@ body {
   html.js [data-reveal] {
     opacity: 0;
   }
+  /* headings stay hidden until SplitText has masked their words
+     (opacity lifted in SectionMotion's onSplit) */
+  html.js [data-split] {
+    opacity: 0;
+  }
 }
 
 /* CSS-only guard. This neuters CSS animations/transitions — it does NOT

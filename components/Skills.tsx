@@ -8,7 +8,7 @@ export default function Skills() {
       aria-labelledby="skills-heading"
       className="border-line py-section border-t"
     >
-      <h2 id="skills-heading" className="font-display text-display uppercase">
+      <h2 data-split id="skills-heading" className="font-display text-display uppercase">
         {ui.sections.skills}
       </h2>
       <div className="mt-block grid gap-x-8 gap-y-10 sm:grid-cols-2">

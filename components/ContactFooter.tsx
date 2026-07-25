@@ -12,7 +12,7 @@ export default function ContactFooter() {
       className="max-w-page px-gutter mx-auto w-full"
     >
       <div className="border-line py-section border-t">
-        <h2 id="contact-heading" className="font-display text-display uppercase">
+        <h2 data-split id="contact-heading" className="font-display text-display uppercase">
           {ui.sections.contact}
         </h2>
         {/* the one ember-primary action on the page */}

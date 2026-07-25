@@ -92,7 +92,7 @@ export default function SelectedWork() {
       aria-labelledby="work-heading"
       className="border-line py-section border-t"
     >
-      <h2 id="work-heading" className="font-display text-display uppercase">
+      <h2 data-split id="work-heading" className="font-display text-display uppercase">
         {ui.sections.work}
       </h2>
       <ul className="mt-block grid grid-cols-1 gap-x-6 gap-y-16 lg:grid-cols-12">
