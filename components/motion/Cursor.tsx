@@ -31,11 +31,20 @@ export default function Cursor() {
       if (!active || !dot) return;
 
       document.documentElement.classList.add("custom-cursor");
-      gsap.set(dot, { xPercent: -50, yPercent: -50, autoAlpha: 0, scale: 1 });
+      // scaleX/scaleY, not the "scale" shorthand: GSAP's quickTo() updates a
+      // running tween's property in place, but "scale" is a shorthand CSSPlugin
+      // decomposes internally — quickTo can't find a direct PropTween for it
+      // and falls back to a full re-init every call (console warning: "scale
+      // not eligible for reset"). The individual properties tween directly.
+      gsap.set(dot, { xPercent: -50, yPercent: -50, autoAlpha: 0, scaleX: 1, scaleY: 1 });
 
       const xTo = gsap.quickTo(dot, "x", { duration: durations.base, ease: gsapEase.outExpo });
       const yTo = gsap.quickTo(dot, "y", { duration: durations.base, ease: gsapEase.outExpo });
-      const scaleTo = gsap.quickTo(dot, "scale", {
+      const scaleXTo = gsap.quickTo(dot, "scaleX", {
+        duration: durations.base,
+        ease: gsapEase.outExpo,
+      });
+      const scaleYTo = gsap.quickTo(dot, "scaleY", {
         duration: durations.base,
         ease: gsapEase.outExpo,
       });
@@ -55,7 +64,9 @@ export default function Cursor() {
         const hit = Boolean((event.target as Element | null)?.closest?.(INTERACTIVE));
         if (hit === hovering) return;
         hovering = hit;
-        scaleTo(hit ? 2.5 : 1);
+        const scale = hit ? 2.5 : 1;
+        scaleXTo(scale);
+        scaleYTo(scale);
         dot.dataset.state = hit ? "hover" : "default";
       };
 
