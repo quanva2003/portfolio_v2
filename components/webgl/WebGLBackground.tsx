@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import gsap from "gsap";
 import DisplacementPlane from "./DisplacementPlane";
+import ParticleField from "./ParticleField";
 import { useWebGLSupport } from "./useWebGLSupport";
 import { dprRange } from "@/lib/webgl/tokens";
 
@@ -71,6 +72,7 @@ export default function WebGLBackground() {
       >
         <TickerBridge />
         <DisplacementPlane />
+        <ParticleField />
       </Canvas>
     </div>
   );
