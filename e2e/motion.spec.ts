@@ -155,6 +155,10 @@ test.describe("fine pointer (desktop)", () => {
     // fixed 60Hz. One driver (gsap.ticker) re-registers ~1 call per frame it
     // advances; a second independent loop (Lenis autoRaf, a stray R3F
     // frameloop) would roughly double that ratio for the same frame count.
+    // A larger FRAMES count (tried 90) makes the ratio itself more stable
+    // under contention but raises timeout risk just as much as it helps —
+    // the real fix for Phase 4's GPU-heavy pages is fewer parallel workers
+    // (see playwright.config.ts), not a bigger sample here.
     const { callCount, frameCount } = await page.evaluate(
       () =>
         new Promise<{ callCount: number; frameCount: number }>((resolve) => {

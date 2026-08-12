@@ -27,6 +27,10 @@ test("cursor hover across multiple targets logs no GSAP warnings", async ({ page
   await page.hover("header nav a >> nth=1");
   await expect(dot).toHaveAttribute("data-state", "hover");
 
+  // Scoped to the GSAP warning this test protects against, not a blanket
+  // zero-console-messages check: Phase 4's WebGL layer legitimately logs
+  // benign library noise on every page (THREE.Clock deprecation notice, GPU
+  // driver performance advisories from headless rendering) unrelated to the
+  // "scale not eligible for reset" bug this regression test exists for.
   expect(consoleMessages.filter((m) => m.includes("not eligible for reset"))).toHaveLength(0);
-  expect(consoleMessages).toHaveLength(0);
 });

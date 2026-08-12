@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import gsap from "gsap";
@@ -17,15 +17,31 @@ import { bloom, dprRange } from "@/lib/webgl/tokens";
  * convention, same as what advance() expects) — do NOT multiply by 1000 the
  * way MotionProvider's Lenis bridge does; that conversion is only for
  * Lenis's millisecond-based raf() API.
+ *
+ * advance() runs OUTSIDE React's render cycle (invoked imperatively from the
+ * gsap.ticker callback, not scheduled by React) -- a throw in here would
+ * escape WebGLErrorBoundary entirely (error boundaries only catch
+ * render/lifecycle errors, not exceptions from code React didn't call
+ * itself) and surface as an uncaught page error. Verified: forcing WebGL
+ * context loss can throw inside three.js internals reacting to it
+ * (getContextAttributes() returns null while lost) on exactly this path.
+ * Caught here so the same failure always resolves to the same fallback.
  */
-function TickerBridge() {
+function TickerBridge({ onFatalError }: { onFatalError: () => void }) {
   const advance = useThree((state) => state.advance);
 
   useEffect(() => {
-    const tick = (time: number) => advance(time);
+    const tick = (time: number) => {
+      try {
+        advance(time);
+      } catch {
+        gsap.ticker.remove(tick);
+        onFatalError();
+      }
+    };
     gsap.ticker.add(tick);
     return () => gsap.ticker.remove(tick);
-  }, [advance]);
+  }, [advance, onFatalError]);
 
   return null;
 }
@@ -50,6 +66,7 @@ const MOTION_QUERY = "(prefers-reduced-motion: no-preference)";
 export default function WebGLBackground() {
   const [motionAllowed, setMotionAllowed] = useState(false);
   const { status, setStatus } = useWebGLSupport();
+  const onFatalError = useCallback(() => setStatus("lost"), [setStatus]);
 
   useEffect(() => {
     const media = window.matchMedia(MOTION_QUERY);
@@ -81,7 +98,7 @@ export default function WebGLBackground() {
           canvasEl.addEventListener("webglcontextrestored", () => setStatus("available"));
         }}
       >
-        <TickerBridge />
+        <TickerBridge onFatalError={onFatalError} />
         <DisplacementPlane />
         <ParticleField />
         {/*
