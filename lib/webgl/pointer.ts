@@ -23,6 +23,14 @@ export function getPointerPosition(): PointerPosition {
   return position;
 }
 
+// Test hook (mirrors window.__lenis / window.__stCount in components/motion/):
+// lets e2e specs assert Cursor.tsx and the WebGL layer read the exact same
+// position instead of two independently-tracked values.
+if (typeof window !== "undefined") {
+  (window as Window & { __pointerPosition?: () => PointerPosition }).__pointerPosition =
+    getPointerPosition;
+}
+
 /** Notified on every pointermove while subscribed. Returns the unsubscribe function. */
 export function subscribePointer(listener: (pos: PointerPosition) => void): () => void {
   listeners.add(listener);

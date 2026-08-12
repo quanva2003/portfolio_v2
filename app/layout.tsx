@@ -4,6 +4,7 @@ import { site } from "@/content";
 import Cursor from "@/components/motion/Cursor";
 import MotionProvider from "@/components/motion/MotionProvider";
 import WebGLBackground from "@/components/webgl/WebGLBackground";
+import WebGLErrorBoundary from "@/components/webgl/WebGLErrorBoundary";
 import "@/styles/globals.css";
 
 const archivo = Archivo({
@@ -55,7 +56,9 @@ export default function RootLayout({
           }}
         />
         <MotionProvider />
-        <WebGLBackground />
+        <WebGLErrorBoundary>
+          <WebGLBackground />
+        </WebGLErrorBoundary>
         <Cursor />
         {children}
       </body>

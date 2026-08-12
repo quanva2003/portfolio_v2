@@ -39,8 +39,13 @@ const MOTION_QUERY = "(prefers-reduced-motion: no-preference)";
  * here (not inside Hero) is required so Phase 5 can keep the canvas alive
  * across route navigation instead of tearing it down per page.
  *
- * Renders nothing under reduced motion OR when WebGL is unavailable/lost —
- * both fall back to the same thing: the static Phase 2 hero, unmodified.
+ * Never mounts under reduced motion or when WebGL is unavailable at capability
+ * probe time — both fall back to the same thing: the static Phase 2 hero,
+ * unmodified. But once mounted, a later context LOSS does not unmount the
+ * Canvas — it's only hidden (visibility, not removed). An unmounted canvas's
+ * GL context can never fire webglcontextrestored again, so there'd be no path
+ * back; keeping the same element alive lets the browser (or, in the Step 5
+ * e2e spec, a forced WEBGL_lose_context/restoreContext() call) recover it.
  */
 export default function WebGLBackground() {
   const [motionAllowed, setMotionAllowed] = useState(false);
@@ -54,10 +59,15 @@ export default function WebGLBackground() {
     return () => media.removeEventListener("change", sync);
   }, []);
 
-  if (!motionAllowed || status !== "available") return null;
+  if (!motionAllowed || status === "checking" || status === "unavailable") return null;
 
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-0 -z-10"
+      data-webgl-status={status}
+      style={{ visibility: status === "lost" ? "hidden" : "visible" }}
+    >
       <Canvas
         frameloop="never"
         dpr={dprRange}
