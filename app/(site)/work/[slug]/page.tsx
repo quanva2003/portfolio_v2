@@ -53,9 +53,27 @@ function MarkerList({ items, marker }: { items: string[]; marker: "index" | "rul
               {String(i + 1).padStart(2, "0")}
             </span>
           ) : (
-            <span aria-hidden="true" className="bg-ember mt-3 h-px w-4 shrink-0" />
+            /*
+             * 2px, not the 1px hairline used for borders elsewhere. A 1px
+             * background element lands on whatever fractional Y the line box
+             * gives it (measured .59 and .81 offsets here) and, unlike a
+             * border, nothing snaps it to the device grid — at 1x DPR the
+             * ember antialiases across two rows and reads as washed-out grey,
+             * while the one marker that happened to land near an integer
+             * stayed orange. Verified against a 3x capture, where all three
+             * render correctly. 2px always keeps one fully-covered row.
+             */
+            <span aria-hidden="true" className="bg-ember mt-3 h-0.5 w-4 shrink-0" />
           )}
-          <p className="text-body text-fg-muted">{item}</p>
+          {/*
+           * Capped measure. The column is 875px wide, which at 16px body type
+           * is 78 characters a line — well past comfortable, and inconsistent
+           * with the 22px prose blocks that already sit at a well-judged 59.
+           * The cap goes on the type, not the column: `ch` resolves against
+           * the element's own font size, so one container-level cap can't
+           * serve both 16px and 22px children.
+           */}
+          <p className="text-body text-fg-muted max-w-[66ch]">{item}</p>
         </li>
       ))}
     </ul>
