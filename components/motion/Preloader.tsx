@@ -152,15 +152,22 @@ export default function Preloader() {
           });
       };
 
-      const tick = () => {
+      /*
+       * gsap.ticker hands the callback (timeSeconds, deltaMs, frame, elapsed).
+       * The rates in lib/transition.ts are per SECOND and integrated against
+       * deltaMs, so the hold lasts the same wall-clock time whether the page
+       * is rendering at 60fps or struggling at 15.
+       */
+      const tick = (_time: number, deltaMs: number) => {
         if (exiting) return;
+        const step = Math.min(deltaMs, preloader.maxDeltaMs) / 1000;
         const gap = target - shown;
         if (gap > 0) {
-          // Proportional catch-up with a floor, clamped so it can never
-          // overshoot a signal that hasn't actually arrived yet.
+          // Proportional catch-up with a floor, clamped so the counter can
+          // never overshoot a signal that hasn't actually arrived yet.
           shown = Math.min(
             target,
-            shown + Math.max(gap * preloader.catchUpRate, preloader.minStep),
+            shown + Math.max(gap * preloader.catchUpRate, preloader.minRate) * step,
           );
         }
         if (target >= 1 && shown >= 1) {
