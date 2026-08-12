@@ -27,8 +27,8 @@ export const particleField = {
 export const dprRange: [number, number] = [1, 2];
 
 export const bloom = {
-  baseIntensity: 0.2,
-  peakIntensity: 1.1,
+  baseIntensity: 0.15,
+  peakIntensity: 0.5,
   /** distance (same unit space as displacement.falloffRadius) at which bloom reaches peak */
-  proximityRadius: 0.4,
+  proximityRadius: 0.15,
 } as const;

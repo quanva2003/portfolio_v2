@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { extend, useFrame, useThree } from "@react-three/fiber";
 import { shaderMaterial } from "@react-three/drei";
 import { getPointerPosition } from "@/lib/webgl/pointer";
-import { displacement, pointerLerp } from "@/lib/webgl/tokens";
+import { bloom, displacement, pointerLerp } from "@/lib/webgl/tokens";
 
 /*
  * uMouse/uTime are mutated via refs inside useFrame (which fires on every
@@ -21,6 +21,8 @@ const DisplacementMaterialImpl = shaderMaterial(
     uColor: new THREE.Color("#101114"),
     uFalloffRadius: displacement.falloffRadius,
     uStrength: displacement.strength,
+    uGlowRadius: bloom.proximityRadius,
+    uGlowPeak: bloom.peakIntensity,
   },
   /* glsl vertex */ `
     uniform vec2 uMouse;
@@ -43,12 +45,18 @@ const DisplacementMaterialImpl = shaderMaterial(
     uniform vec2 uMouse;
     uniform float uTime;
     uniform vec3 uColor;
+    uniform float uGlowRadius;
+    uniform float uGlowPeak;
     varying vec2 vUv;
 
     void main() {
       vec2 centered = vUv * 2.0 - 1.0;
       float dist = distance(centered, uMouse);
-      float glow = smoothstep(0.4, 0.0, dist) * 0.15;
+      // peaks well above 1.0 near the cursor — deliberately over-bright so the
+      // Bloom postprocessing pass (EffectComposer in WebGLBackground) picks it
+      // up via luminance threshold. This IS "driving bloom by cursor proximity
+      // in the shader": Bloom itself needs no per-frame JS-driven intensity prop.
+      float glow = smoothstep(uGlowRadius, 0.0, dist) * uGlowPeak;
       gl_FragColor = vec4(uColor + glow, 1.0);
     }
   `,
@@ -64,6 +72,8 @@ declare module "@react-three/fiber" {
       uColor?: THREE.Color | string;
       uFalloffRadius?: number;
       uStrength?: number;
+      uGlowRadius?: number;
+      uGlowPeak?: number;
     };
   }
 }

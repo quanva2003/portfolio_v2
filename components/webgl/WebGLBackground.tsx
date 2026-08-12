@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
+import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import gsap from "gsap";
 import DisplacementPlane from "./DisplacementPlane";
 import ParticleField from "./ParticleField";
 import { useWebGLSupport } from "./useWebGLSupport";
-import { dprRange } from "@/lib/webgl/tokens";
+import { bloom, dprRange } from "@/lib/webgl/tokens";
 
 /*
  * Single-RAF contract (locked by the Phase 3 eng review, extended in Phase 4):
@@ -73,6 +74,25 @@ export default function WebGLBackground() {
         <TickerBridge />
         <DisplacementPlane />
         <ParticleField />
+        {/*
+         * "Cursor-proximity bloom" happens upstream, in DisplacementPlane's
+         * fragment shader (uGlowPeak pushes brightness well past 1.0 near the
+         * cursor) — Bloom here just reacts to luminance via threshold, no
+         * per-frame JS-driven intensity prop needed. multisampling=0: this is
+         * an abstract full-screen background, not geometry that needs MSAA.
+         * EffectComposer resizes its render targets in place on viewport
+         * resize (verified by reading its source — composer.setSize() handles
+         * this); the whole Canvas+GL context (and everything postprocessing
+         * allocated) is torn down on unmount via the reduced-motion/no-WebGL/
+         * context-loss fallback path above, so there's nothing left to leak.
+         */}
+        <EffectComposer multisampling={0}>
+          <Bloom
+            intensity={bloom.baseIntensity}
+            luminanceThreshold={0.3}
+            luminanceSmoothing={0.2}
+          />
+        </EffectComposer>
       </Canvas>
     </div>
   );
