@@ -5,6 +5,20 @@ export interface SiteMeta {
   location: string;
 }
 
+/**
+ * Case-study copy for a project's detail route. Deliberately qualitative:
+ * every line here traces back to the CV, so no invented metrics creep in.
+ * Swap `results` for sourced numbers when they're available.
+ */
+export interface ProjectDetail {
+  /** The problem the product exists to solve. */
+  problem: string;
+  /** What I personally built, one line per contribution. */
+  shipped: string[];
+  /** What the work produced, one line each. */
+  results: string[];
+}
+
 export interface Project {
   slug: string;
   name: string;
@@ -16,6 +30,7 @@ export interface Project {
   flagship: boolean;
   /** Order on the Selected Work grid, ascending. */
   order: number;
+  detail: ProjectDetail;
 }
 
 export interface ExperienceEntry {
@@ -60,6 +75,30 @@ export interface UiStrings {
   contactLinks: {
     github: string;
     linkedin: string;
+  };
+  /** Chrome for the project case-study route. */
+  project: {
+    /** Eyebrow above the case-study title. */
+    eyebrow: string;
+    /** Affordance on a work-grid card. */
+    cta: string;
+    /** Back link to the work grid. */
+    back: string;
+    problem: string;
+    role: string;
+    stack: string;
+    shipped: string;
+    results: string;
+  };
+  preloader: {
+    /** Announced by the progressbar while real assets load. */
+    label: string;
+  };
+  notFound: {
+    code: string;
+    title: string;
+    body: string;
+    back: string;
   };
 }
 
