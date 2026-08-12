@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { extend, useFrame, useThree } from "@react-three/fiber";
 import { shaderMaterial } from "@react-three/drei";
 import { getPointerPosition } from "@/lib/webgl/pointer";
-import { pointerLerp } from "@/lib/webgl/tokens";
+import { displacement, pointerLerp } from "@/lib/webgl/tokens";
 
 /*
  * uMouse/uTime are mutated via refs inside useFrame (which fires on every
@@ -19,12 +19,24 @@ const DisplacementMaterialImpl = shaderMaterial(
     uMouse: new THREE.Vector2(0, 0),
     uTime: 0,
     uColor: new THREE.Color("#101114"),
+    uFalloffRadius: displacement.falloffRadius,
+    uStrength: displacement.strength,
   },
   /* glsl vertex */ `
+    uniform vec2 uMouse;
+    uniform float uFalloffRadius;
+    uniform float uStrength;
     varying vec2 vUv;
+
     void main() {
       vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      // uv*2-1 centers the plane's own space so it lines up with uMouse,
+      // which arrives in the same centered NDC-ish space (see useFrame below).
+      vec2 centered = uv * 2.0 - 1.0;
+      float dist = distance(centered, uMouse);
+      float falloff = smoothstep(uFalloffRadius, 0.0, dist);
+      vec3 displaced = position + normal * falloff * uStrength;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
     }
   `,
   /* glsl fragment */ `
@@ -34,8 +46,6 @@ const DisplacementMaterialImpl = shaderMaterial(
     varying vec2 vUv;
 
     void main() {
-      // vUv*2-1 centers the plane's own uv space so it lines up with uMouse,
-      // which arrives in the same centered NDC-ish space (see useFrame below).
       vec2 centered = vUv * 2.0 - 1.0;
       float dist = distance(centered, uMouse);
       float glow = smoothstep(0.4, 0.0, dist) * 0.15;
@@ -52,6 +62,8 @@ declare module "@react-three/fiber" {
       uMouse?: THREE.Vector2;
       uTime?: number;
       uColor?: THREE.Color | string;
+      uFalloffRadius?: number;
+      uStrength?: number;
     };
   }
 }
@@ -81,7 +93,7 @@ export default function DisplacementPlane() {
 
   return (
     <mesh scale={[viewport.width, viewport.height, 1]}>
-      <planeGeometry args={[1, 1, 1, 1]} />
+      <planeGeometry args={[1, 1, 64, 64]} />
       <displacementMaterial ref={materialRef} />
     </mesh>
   );

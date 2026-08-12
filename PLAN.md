@@ -202,32 +202,84 @@ Run /qa.
 **Deliverable:** Hero/background WebGL that distorts toward the cursor, a particle field reacting to mouse velocity, and glow/bloom that intensifies near the cursor.
 **Skills:** gstack `/plan-eng-review` then `/qa`.
 
-**Prompt:**
+**Prompt** _(locked by /plan-eng-review 2026-07-25 — see GSTACK REVIEW REPORT at the bottom of this file)_:
 
 ```
-Run /plan-eng-review first. Do NOT write the full shader in one shot — build and verify in steps,
-committing each working step.
+Implement per the eng-review-locked architecture below. yarn ONLY. Do NOT write the full shader
+in one shot — build and verify in steps, committing each working step.
 
-Step 1: Mount an R3F <Canvas> as a fixed full-viewport background layer behind the DOM content.
-        Confirm it renders a flat plane with a base color and does not break scroll or CLS.
-Step 2: Pass a smoothed uMouse uniform (lerped mouse position) + uTime into a custom GLSL material.
-Step 3: Displacement — displace the plane/hero texture toward uMouse (falloff by distance). Tune falloff.
-Step 4: Particle field (Points) whose motion responds to mouse position and velocity.
-Step 5: Glow — add @react-three/postprocessing Bloom; drive bloom intensity by cursor proximity in the shader.
+File layout (named up front so the 5 commits have clean boundaries):
+- components/webgl/WebGLBackground.tsx — mounts <Canvas frameloop="never">, joins gsap.ticker,
+  owns the reduced-motion / no-WebGL / context-loss fallback branching
+- components/webgl/DisplacementPlane.tsx (+ its shaderMaterial, via drei's `shaderMaterial`
+  factory) — a decorative background plane, NOT the live DOM hero text (target-stack signature
+  #2's "hero media" means this plane — the hero copy itself stays normal DOM, already handled
+  by Phase 3's SplitText; distorting live text would need a text→texture capture step, rejected
+  as unnecessary complexity for this site)
+- components/webgl/ParticleField.tsx — Points geometry reacting to mouse position/velocity
+- components/webgl/useWebGLSupport.ts — capability probe (canvas.getContext('webgl2'||'webgl')
+  before mount) + onContextLost/onContextRestored wiring
+- lib/webgl/pointer.ts — the ONE shared raw-pointer-position tracker; components/motion/Cursor.tsx
+  is refactored to read from this instead of running its own window.pointermove listener
+- lib/webgl/tokens.ts — named constants (lerp factor, falloff radius, particle count/speed,
+  DPR clamp range, bloom intensity min/max), mirroring lib/motion.ts — no inline magic numbers
+
+Mount WebGLBackground in app/layout.tsx, sibling to MotionProvider/Cursor (fixed full-viewport,
+negative z-index, behind {children}) — NOT inside Hero.tsx. Phase 5 requires the canvas to survive
+route navigation without tearing down; root-layout mounting is the only place that works for that.
+
+Reduced motion: gate the ENTIRE canvas on gsap.matchMedia("(prefers-reduced-motion: no-preference)"),
+same pattern as MotionProvider.tsx — under reduced motion OR no WebGL, mount nothing and show the
+Phase 2 static hero. Same fallback code path for both cases.
+
+Step 1: Mount the R3F <Canvas> (frameloop="never") as a fixed full-viewport background layer behind
+        the DOM content. Confirm it renders the flat plane with a base color and does not break
+        scroll or CLS. Wire useWebGLSupport's capability probe + context-loss listeners here so
+        every later step inherits the fallback branching for free.
+Step 2: Pass a smoothed uMouse uniform (lerped from lib/webgl/pointer.ts's raw position, lerp
+        factor from lib/webgl/tokens.ts) + uTime into DisplacementPlane's material. Both are
+        mutated via refs inside the ticker-driven advance callback — NEVER via React useState
+        (a 60fps re-render of the whole WebGL subtree is the standard R3F footgun). uTime comes
+        straight from gsap.ticker's raw seconds-denominated callback arg passed into advance(t) —
+        no ×1000 conversion (that conversion in MotionProvider.tsx is ONLY for Lenis's ms-based
+        API; three.js's Clock/advance() expects seconds — passing ms in would silently corrupt
+        elapsedTime/delta for every time-based uniform).
+Step 3: Displacement — displace DisplacementPlane toward uMouse (falloff by distance, radius from
+        lib/webgl/tokens.ts). Tune falloff by editing the token, not an inline number.
+Step 4: Particle field (Points) whose motion responds to mouse position and velocity (velocity
+        derived from lib/webgl/pointer.ts's position deltas over time).
+Step 5: Glow — add @react-three/postprocessing Bloom; drive bloom intensity by cursor proximity in
+        the shader. Verify EffectComposer's render targets are disposed on unmount and on resize —
+        don't assume. Also in this step: a forced context-loss/restore Playwright spec (the
+        WEBGL_lose_context extension is force-able on demand, not a real GPU crash simulation) that
+        asserts fallback-then-recovery.
 
 Rules:
-- Clamp devicePixelRatio (max ~2), throttle where possible, keep it 60fps on desktop
-- Everything must degrade gracefully if WebGL is unavailable (fall back to the Phase 2 static hero)
+- Clamp devicePixelRatio (max ~2) via Canvas's `dpr={[1, 2]}` prop, throttle where possible, keep
+  it 60fps on desktop
+- Everything must degrade gracefully if WebGL is unavailable OR the context is lost mid-session
+  (fall back to the Phase 2 static hero in both cases)
 - Investigate before fixing any perf regression; measure, don't guess
 - Single-RAF contract (locked in Phase 3 eng review): the R3F <Canvas> uses frameloop="never" and is
   advanced from the existing gsap.ticker in MotionProvider — never its own internal RAF. Re-evaluate
   gsap.ticker.lagSmoothing(0) once the shader joins the ticker (a dropped WebGL frame must not yank
   the scroll clock).
 
+Tests (Step 5, alongside the shader work — not deferred to a follow-up):
+- Existing e2e/motion.spec.ts test (7) "exactly one RAF driver" must still pass unmodified once
+  Canvas joins the ticker — the highest-value regression check in this phase.
+- New specs: reduced-motion → no canvas mounted, static hero shown; WebGL unavailable → static
+  hero, no console error; touch/mobile → canvas DOES mount (unlike Cursor, which doesn't on touch);
+  shared pointer position has no drift between Cursor.tsx and WebGLBackground; forced context-loss
+  via WEBGL_lose_context → fallback appears → restoreContext() → recovery verified.
+- Manual /qa only (not CI-assertable): visual shader correctness, real 60fps via perf trace (same
+  as Phase 3's fps handling — not a fake headless assertion), memory-growth check via Chrome
+  DevTools heap snapshot before/after a 2-minute mouse-move soak.
+
 Run /qa after each step and a final /qa at the end.
 ```
 
-**QA gate:** 60fps desktop / ~45fps mobile · DPR clamped · graceful WebGL fallback · no memory growth over 2 min · CLS unaffected · still exactly ONE RAF loop with the canvas mounted · cursor mix-blend-mode cost re-verified over the live canvas (non-blend cursor fallback stays one line away).
+**QA gate:** 60fps desktop / ~45fps mobile · DPR clamped · graceful WebGL fallback (unavailable AND mid-session context loss) · no memory growth over 2 min (verified via heap-snapshot soak, not assumed) · CLS unaffected · still exactly ONE RAF loop with the canvas mounted (regression-asserted by existing test (7)) · cursor mix-blend-mode cost re-verified over the live canvas (non-blend cursor fallback stays one line away) · reduced-motion gates the entire canvas, same as no-WebGL.
 
 ---
 
@@ -325,11 +377,15 @@ fallback from Phase 2 wired the whole way, so you always have something shippabl
 |--------|---------|-----|------|--------|----------|
 | CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | — | — |
 | Codex Review | `/codex review` | Independent 2nd opinion | 0 | — | — |
-| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | CLEAN (PLAN, 2026-07-06) | 24 issues (9 section findings + 16 test gaps consolidated), 0 critical gaps — all resolved & folded into Phase 3/4 |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 2 | CLEAN (PLAN, 2026-07-25) | Run 1 (2026-07-06, Phase 3): 24 issues, 0 critical gaps, all resolved. Run 2 (2026-07-25, Phase 4): 11 issues (3 architecture, 2 code quality, 1 test-scope, 2 performance, 3 outside-voice) + 1 TODO-candidate built into scope, 0 critical gaps, all resolved & folded into Phase 4 |
 | Design Review | `/plan-design-review` | UI/UX gaps | 0 | — | — |
 | DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | — |
 
-- **CROSS-MODEL:** Outside voice (Claude subagent; Codex not installed) challenged 3 locked decisions — hidden-state flash (accepted: html.js hybrid), magnetic targets (accepted: 3 ContactFooter pills only), test rot without CI (accepted: GitHub Actions + RAF/leak assertions) — plus 7 additive refinements, all accepted and folded.
-- **VERDICT:** ENG CLEARED — ready to implement Phase 3.
+- **CROSS-MODEL:** Outside voice (Claude subagent; Codex not installed) found 3 net-new gaps the section review missed — displacement target ambiguity (accepted: decorative plane, not live DOM text), canvas mount point (accepted: root layout, not Hero-scoped, since Phase 5 needs it to survive navigation), and an `advance()` seconds-vs-ms unit footgun (accepted: documented explicitly) — no disagreement with the section review's own findings, purely additive.
+- **NOT in scope (Phase 4):** mobile-specific particle-count/bloom degradation (Phase 6 owns adaptive degradation; Phase 4 ships one reasonable fixed default) · distorting live DOM hero text via a texture capture (rejected in favor of a decorative plane — same visual signature, far less complexity for a solo-dev site) · broader device-matrix fps validation (Phase 6's "verified on a real device" gate covers this; Phase 4's perf check is a single manual trace).
+- **What already exists, reused rather than rebuilt:** the single-RAF `gsap.ticker` contract and its `lagSmoothing(0)` call (`components/motion/MotionProvider.tsx`) · `three`/`@react-three/fiber`/`@react-three/drei`/`@react-three/postprocessing` already installed at current versions (Phase 0) · `lib/motion.ts`'s token-file pattern, mirrored by the new `lib/webgl/tokens.ts` · `components/motion/Cursor.tsx`'s pointer-tracking, consolidated into the new shared `lib/webgl/pointer.ts` instead of duplicated · `components/Hero.tsx`'s current text-only state, reused as-is for the reduced-motion/no-WebGL fallback.
+- **Failure modes flagged:** WebGL context lost mid-session (no test → now `[REGRESSION-CRITICAL]`-adjacent forced-loss E2E spec, Step 5) · a naive `useState`-driven uniform update silently blowing the 60fps budget with no error (no test possible for a "didn't happen" — mitigated by naming the ref-based pattern explicitly in the prompt) · `lib/webgl/pointer.ts`'s shared listener must be a module-level singleton independent of either consumer's mount/unmount lifecycle (Cursor.tsx and WebGLBackground mount/unmount independently — tying the shared listener's lifecycle to whichever mounts first would throw on stale access from the other).
+- **Parallelization:** Lane A — `lib/webgl/pointer.ts` extraction + `Cursor.tsx` refactor (independent). Lane B — Step 1 Canvas mount + fallback wiring (independent, no pointer data needed yet). Merge, then Lane C — Step 3 displacement ∥ Lane D — Step 4 particles (both depend on Step 2's uniform-wiring pattern, touch different files). Merge, then Step 5 (bloom + full test batch, depends on C+D). Conflict risk: C and D may both add a JSX child to `WebGLBackground.tsx`'s scene tree — trivial to resolve.
+- **VERDICT:** ENG CLEARED — ready to implement Phase 4.
 
 NO UNRESOLVED DECISIONS
