@@ -42,10 +42,19 @@ export const PRELOADER_DONE_EVENT = "preloader:done";
 export const PRELOADER_GATE_FAILSAFE_MS = 6000;
 
 export const preloader = {
-  /** Fraction of the gap to the real progress value closed per ticker tick. */
-  counterLerp: 0.12,
-  /** Real progress is discrete; below this remaining gap the counter has arrived. */
-  arrivalEpsilon: 0.004,
+  /**
+   * Fraction of the remaining gap to real progress the counter closes each
+   * ticker tick — the reason a discrete signal (fonts settle, document
+   * settles) reads as a continuous climb instead of a jump.
+   */
+  catchUpRate: 0.18,
+  /**
+   * Floor on that step, in progress units per tick. A pure proportional
+   * catch-up approaches its target asymptotically: measured at ~5s to crawl
+   * the last few percent, which is both a bad load experience and long enough
+   * to blow the e2e timeouts. The floor bounds arrival at ~1/minStep ticks.
+   */
+  minStep: 0.025,
   /** Relative weights of the real load signals the progress bar is built from. */
   weights: { fonts: 3, document: 2, image: 1 },
 } as const;

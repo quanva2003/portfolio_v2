@@ -215,6 +215,38 @@ html.custom-cursor * {
   }
 }
 
+/* ---- route morph (native View Transitions API) ----
+   The ::view-transition pseudo-elements are only reachable from a stylesheet,
+   so the morph's curves live here while lib/transition.ts owns the JS-side
+   names and timeouts. Consumes the same duration/easing tokens as every other
+   transition on the page — no new numbers.
+
+   Shared-element pairs (project-media-<slug>, see components/ProjectMedia.tsx)
+   get the slower `gentle` travel; the root cross-fade underneath stays at
+   `base` so the page swap resolves before the morph lands, which reads as the
+   thumbnail leading the navigation rather than trailing it. */
+::view-transition-group(*) {
+  animation-duration: var(--dur-gentle);
+  animation-timing-function: var(--ease-out-expo);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur-base);
+  animation-timing-function: var(--ease-in-out-soft);
+}
+
+/* Belt and braces: navigateWithTransition() already refuses to start a
+   transition under reduced motion, so this only covers a browser-initiated
+   one (e.g. a future cross-document transition). */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 /* CSS-only guard. This neuters CSS animations/transitions — it does NOT
    cover GSAP/Lenis/SplitText; their gate is gsap.matchMedia inside
    components/motion/ (MotionProvider, SectionMotion). */

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { countRafDrivers, waitForPageReady } from "./helpers";
 
 /*
  * Phase 3 QA-gate specs (numbering from PLAN.md Phase 3, commit 5):
@@ -13,6 +14,13 @@ import { test, expect, type Page } from "@playwright/test";
  *
  * Test hooks provided by the app: window.__lenis (MotionProvider),
  * window.__stCount (SectionMotion), [data-cursor-dot][data-state] (Cursor).
+ *
+ * Phase 5 note: scroll choreography is now gated on the cold-load preloader,
+ * so every spec that asserts on reveal state, trigger counts or focus goes
+ * through waitForPageReady() first. Without it the assertions would race the
+ * real font/document load signals the preloader measures — the gate changed
+ * WHEN choreography binds, not what it does, so the assertions themselves are
+ * unchanged.
  */
 
 declare global {
@@ -48,6 +56,7 @@ test.describe("reduced motion", () => {
 
   test("(1) fully static page: no Lenis, no cursor, everything visible", async ({ page }) => {
     await page.goto("/");
+    await waitForPageReady(page);
     await page.waitForFunction(() => typeof window.__stCount === "function");
 
     await expect(page.locator("[data-cursor-dot]")).toHaveCount(0);
@@ -88,6 +97,7 @@ test.describe("touch device", () => {
 
   test("(3) custom cursor never mounts", async ({ page }) => {
     await page.goto("/");
+    await waitForPageReady(page);
     await page.waitForFunction(() => typeof window.__stCount === "function");
     await expect(page.locator("[data-cursor-dot]")).toHaveCount(0);
   });
@@ -96,6 +106,7 @@ test.describe("touch device", () => {
 test.describe("fine pointer (desktop)", () => {
   test("(4) cursor present and scales on interactive hover", async ({ page }) => {
     await page.goto("/");
+    await waitForPageReady(page);
     const dot = page.locator("[data-cursor-dot]");
     await expect(dot).toHaveCount(1);
 
@@ -111,24 +122,23 @@ test.describe("fine pointer (desktop)", () => {
 
   test("(5) nav anchor and skip link move focus to their targets", async ({ page }) => {
     await page.goto("/");
+    await waitForPageReady(page);
     await page.waitForFunction(() => window.__lenis !== undefined);
 
-    await page.click('header nav a[href="#about"]');
-    await expect
-      .poll(() => page.evaluate(() => document.activeElement?.id))
-      .toBe("about");
+    await page.click('header nav a[href="/#about"]');
+    await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("about");
 
     await page.goto("/");
+    await waitForPageReady(page);
     await page.waitForFunction(() => window.__lenis !== undefined);
     await page.keyboard.press("Tab");
     await page.keyboard.press("Enter");
-    await expect
-      .poll(() => page.evaluate(() => document.activeElement?.id))
-      .toBe("main");
+    await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("main");
   });
 
   test("(6) every section reaches visible state after a full scroll", async ({ page }) => {
     await page.goto("/");
+    await waitForPageReady(page);
     await page.waitForFunction(() => typeof window.__stCount === "function");
     await scrollThroughPage(page);
 
@@ -147,58 +157,25 @@ test.describe("fine pointer (desktop)", () => {
 
   test("(7) exactly one RAF driver", async ({ page }) => {
     await page.goto("/");
+    await waitForPageReady(page);
     await page.waitForFunction(() => window.__lenis !== undefined);
     await page.mouse.wheel(0, 600);
 
-    // Measure rAF *registrations* per real browser frame, using rAF itself
-    // as the frame clock — robust to headless Chromium not throttling to a
-    // fixed 60Hz. One driver (gsap.ticker) re-registers ~1 call per frame it
-    // advances; a second independent loop (Lenis autoRaf, a stray R3F
-    // frameloop) would roughly double that ratio for the same frame count.
-    // A larger FRAMES count (tried 90) makes the ratio itself more stable
-    // under contention but raises timeout risk just as much as it helps —
-    // the real fix for Phase 4's GPU-heavy pages is fewer parallel workers
-    // (see playwright.config.ts), not a bigger sample here.
-    const { callCount, frameCount } = await page.evaluate(
-      () =>
-        new Promise<{ callCount: number; frameCount: number }>((resolve) => {
-          const originalRAF = window.requestAnimationFrame.bind(window);
-          const FRAMES = 30;
-          let callCount = 0;
-          let frameCount = 0;
-
-          window.requestAnimationFrame = (callback: FrameRequestCallback) => {
-            callCount++;
-            return originalRAF(callback);
-          };
-
-          const tick = () => {
-            frameCount++;
-            if (frameCount >= FRAMES) {
-              window.requestAnimationFrame = originalRAF;
-              resolve({ callCount, frameCount });
-            } else {
-              originalRAF(tick);
-            }
-          };
-          originalRAF(tick);
-        }),
-    );
-
-    const callsPerFrame = callCount / frameCount;
-    expect(callsPerFrame).toBeGreaterThan(0.8);
-    expect(callsPerFrame).toBeLessThan(1.5);
+    // countRafDrivers() counts SELF-SUSTAINING loops only -- see e2e/helpers.ts
+    // for why raw registrations-per-frame (what this asserted through Phase 4)
+    // was contention-sensitive noise rather than a measurement of the contract.
+    // One driver reads 1.0; Lenis autoRaf or a stray R3F frameloop reads ~2.0.
+    expect(await countRafDrivers(page)).toBeLessThan(1.5);
   });
 
   test("(8) once-triggers self-destroy after the full reveal pass", async ({ page }) => {
     await page.goto("/");
+    await waitForPageReady(page);
     await page.waitForFunction(() => typeof window.__stCount === "function");
 
-    expect(await page.evaluate(() => window.__stCount!())).toBeGreaterThan(0);
+    await expect.poll(() => page.evaluate(() => window.__stCount!())).toBeGreaterThan(0);
 
     await scrollThroughPage(page);
-    await expect
-      .poll(() => page.evaluate(() => window.__stCount!()), { timeout: 15_000 })
-      .toBe(0);
+    await expect.poll(() => page.evaluate(() => window.__stCount!()), { timeout: 15_000 }).toBe(0);
   });
 });

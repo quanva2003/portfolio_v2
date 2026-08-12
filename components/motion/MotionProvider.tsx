@@ -37,19 +37,32 @@ export default function MotionProvider() {
        * target (nav links momentum-scroll; the skip link jumps instantly —
        * a keyboard user should never sit through a momentum scroll).
        * Targets carry tabindex="-1" so focus() actually lands.
+       *
+       * Matches root-absolute hashes ("/#work") as well as bare ones, but only
+       * hijacks a click when the href's pathname is the page we're already on.
+       * The header renders on project case studies too, where "/#work" has to
+       * stay a real navigation home — not a no-op because #work isn't in this
+       * document, and not a smooth scroll to a coincidentally-matching id.
        */
       const onAnchorClick = (event: MouseEvent) => {
         if (event.defaultPrevented || event.button !== 0) return;
         if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
-        const anchor = (event.target as Element | null)?.closest?.('a[href^="#"]');
+        const anchor = (event.target as Element | null)?.closest?.<HTMLAnchorElement>(
+          'a[href*="#"]',
+        );
         if (!anchor) return;
-        const id = decodeURIComponent((anchor.getAttribute("href") ?? "").slice(1));
+
+        const url = new URL(anchor.href, location.href);
+        if (url.pathname !== location.pathname || url.origin !== location.origin) return;
+
+        const id = decodeURIComponent(url.hash.slice(1));
         const target = id ? document.getElementById(id) : null;
         if (!target) return;
+
         event.preventDefault();
         lenis.scrollTo(target, { immediate: anchor.hasAttribute("data-skip-link") });
         target.focus({ preventScroll: true });
-        history.pushState(null, "", `#${id}`);
+        history.pushState(null, "", `${url.pathname}${url.hash}`);
       };
       document.addEventListener("click", onAnchorClick);
 

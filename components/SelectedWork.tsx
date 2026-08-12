@@ -1,36 +1,35 @@
+import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import type { Project } from "@/content";
 import { projects, ui } from "@/content";
+import ProjectMedia from "@/components/ProjectMedia";
+import TransitionLink from "@/components/motion/TransitionLink";
+import { projectPath } from "@/lib/transition";
 
 /*
  * Asymmetric work grid: the flagship spans the full row with widescreen media;
  * the remaining three take decreasing column spans (5 / 4 / 3) on desktop
  * and collapse to a single column below lg.
+ *
+ * One animation owner per element (the Phase 3 rule), applied to Phase 5's
+ * route morph: [data-reveal] sits on the copy blocks, never on an ancestor of
+ * the media frame. A view-transition-name'd element is snapshotted WITHOUT its
+ * ancestors' effects applied, so a media frame nested under an opacity-0
+ * reveal target would render fully opaque mid-transition and then dim — the
+ * media frame belongs to the route morph, the copy belongs to the scroll
+ * reveal, and neither touches the other.
  */
 const SUPPORT_SPANS = ["lg:col-span-5", "lg:col-span-4", "lg:col-span-3"] as const;
 
-/**
- * Explicit aspect-ratio media frame so real screenshots (Phase 4/5) drop in
- * with zero layout shift. Decorative for now, hence aria-hidden.
+/*
+ * One link per card, expanded to the whole card by an ::after overlay rather
+ * than by wrapping everything: the accessible name stays the project title
+ * alone, so the media frame, summary and stack list are never announced as
+ * link text. The overlay is part of the <a>, so Cursor.tsx's delegated
+ * `closest('a, button, [data-cursor]')` match scales the cursor across the
+ * whole card for free.
  */
-function MediaSlot({ project, flagship }: { project: Project; flagship: boolean }) {
-  return (
-    <div
-      aria-hidden="true"
-      className={`rounded-media border-line bg-raised flex items-center justify-center overflow-hidden border ${
-        flagship ? "aspect-video md:aspect-[21/9]" : "aspect-[4/3]"
-      }`}
-    >
-      {/* TODO: real product screenshot for this project mounts here (Phase 4/5) */}
-      <span
-        className={`font-display text-fg-faint px-6 text-center uppercase select-none ${
-          flagship ? "text-display" : "text-title"
-        }`}
-      >
-        {project.name}
-      </span>
-    </div>
-  );
-}
+const CARD_LINK =
+  "hover:text-ember after:absolute after:inset-0 after:content-[''] transition-colors duration-(--dur-fast) focus-visible:outline-offset-8";
 
 function StackList({ stack, name }: { stack: string[]; name: string }) {
   return (
@@ -47,16 +46,35 @@ function StackList({ stack, name }: { stack: string[]; name: string }) {
   );
 }
 
+/** Non-interactive cue: the card's single real link already covers this hit area. */
+function CaseStudyCue() {
+  return (
+    <span className="text-micro text-fg-muted group-hover:text-ember inline-flex items-center gap-2 font-mono uppercase transition-colors duration-(--dur-fast)">
+      {ui.project.eyebrow}
+      <ArrowRight
+        weight="bold"
+        aria-hidden="true"
+        className="ease-spring-snap size-3 transition-transform duration-(--dur-gentle) group-hover:translate-x-1"
+      />
+    </span>
+  );
+}
+
 function FlagshipCard({ project }: { project: Project }) {
   return (
-    <article className="flex flex-col gap-6">
-      <MediaSlot project={project} flagship />
-      <div className="flex flex-col gap-4">
-        <h3 className="text-headline">{project.name}</h3>
+    <article className="group relative flex flex-col gap-6">
+      <ProjectMedia project={project} variant="flagship" />
+      <div data-reveal className="flex flex-col gap-4">
+        <h3 className="text-headline">
+          <TransitionLink href={projectPath(project.slug)} className={CARD_LINK}>
+            {project.name}
+          </TransitionLink>
+        </h3>
         <p className="text-lead text-fg-muted max-w-[60ch]">{project.description}</p>
         <StackList stack={project.stack} name={project.name} />
+        <CaseStudyCue />
       </div>
-      <ul className="grid gap-4 md:grid-cols-3">
+      <ul data-reveal className="grid gap-4 md:grid-cols-3">
         {project.highlights.map((highlight) => (
           <li key={highlight} className="border-line text-small text-fg-muted border-t pt-3">
             {highlight}
@@ -69,12 +87,17 @@ function FlagshipCard({ project }: { project: Project }) {
 
 function SupportCard({ project }: { project: Project }) {
   return (
-    <article className="flex h-full flex-col gap-5">
-      <MediaSlot project={project} flagship={false} />
-      <div className="flex flex-col gap-3">
-        <h3 className="text-title">{project.name}</h3>
+    <article className="group relative flex h-full flex-col gap-5">
+      <ProjectMedia project={project} variant="card" />
+      <div data-reveal className="flex flex-col gap-3">
+        <h3 className="text-title">
+          <TransitionLink href={projectPath(project.slug)} className={CARD_LINK}>
+            {project.name}
+          </TransitionLink>
+        </h3>
         <p className="text-body text-fg-muted">{project.summary}</p>
         <StackList stack={project.stack} name={project.name} />
+        <CaseStudyCue />
       </div>
     </article>
   );
@@ -97,12 +120,12 @@ export default function SelectedWork() {
       </h2>
       <ul className="mt-block grid grid-cols-1 gap-x-6 gap-y-16 lg:grid-cols-12">
         {flagship.map((project) => (
-          <li data-reveal key={project.slug} className="lg:col-span-12">
+          <li key={project.slug} className="lg:col-span-12">
             <FlagshipCard project={project} />
           </li>
         ))}
         {support.map((project, i) => (
-          <li data-reveal key={project.slug} className={SUPPORT_SPANS[i % SUPPORT_SPANS.length]}>
+          <li key={project.slug} className={SUPPORT_SPANS[i % SUPPORT_SPANS.length]}>
             <SupportCard project={project} />
           </li>
         ))}
