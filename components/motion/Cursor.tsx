@@ -98,7 +98,7 @@ export default function Cursor() {
       data-cursor-dot
       data-state="default"
       aria-hidden="true"
-      className="rounded-pill bg-white pointer-events-none fixed top-0 left-0 z-[70] size-3 opacity-0 mix-blend-difference"
+      className="rounded-pill pointer-events-none fixed top-0 left-0 z-[70] size-3 bg-white opacity-0 mix-blend-difference"
     />
   );
 }

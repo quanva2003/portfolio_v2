@@ -224,8 +224,7 @@ test.describe("fine pointer (desktop)", () => {
 
     const lost = await page.evaluate(() => {
       const canvas = document.querySelector("canvas");
-      const gl =
-        canvas?.getContext("webgl2") ?? canvas?.getContext("webgl");
+      const gl = canvas?.getContext("webgl2") ?? canvas?.getContext("webgl");
       const ext = gl?.getExtension("WEBGL_lose_context");
       if (!ext) return false;
       ext.loseContext();

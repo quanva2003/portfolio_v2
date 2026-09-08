@@ -89,10 +89,13 @@ export async function countRafDrivers(page: Page): Promise<number> {
 export async function waitForWebGLDecision(page: Page): Promise<"full" | "reduced"> {
   await waitForPageReady(page);
   await page.waitForFunction(
-    () => (window as { __webglTier?: string }).__webglTier !== undefined &&
+    () =>
+      (window as { __webglTier?: string }).__webglTier !== undefined &&
       (window as { __webglTier?: string }).__webglTier !== "probing",
   );
-  return page.evaluate(() => (window as { __webglTier?: string }).__webglTier as "full" | "reduced");
+  return page.evaluate(
+    () => (window as { __webglTier?: string }).__webglTier as "full" | "reduced",
+  );
 }
 
 /**
