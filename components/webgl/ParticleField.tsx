@@ -75,7 +75,20 @@ export default function ParticleField() {
   const viewport = useThree((state) => state.viewport);
   const materialRef = useRef<ParticleMaterial>(null);
 
-  const geometry = useMemo(() => {
+  /*
+   * Attribute arrays only — the BufferGeometry itself is declared as a JSX
+   * child below so React Three Fiber owns its lifecycle.
+   *
+   * This used to build `new THREE.BufferGeometry()` here and pass it as a
+   * `geometry` prop. R3F disposes objects it creates declaratively, but an
+   * object you construct yourself and hand over as a prop stays yours to free —
+   * so every viewport change allocated fresh GPU buffers and orphaned the
+   * previous ones. That is worse than it sounds on mobile: `viewport` changes
+   * whenever the canvas resizes, and the URL bar collapsing during scroll
+   * resizes the visual viewport, so the leak was driven by scrolling rather
+   * than only by rotation.
+   */
+  const { positions, seeds } = useMemo(() => {
     const positions = new Float32Array(particleField.count * 3);
     const seeds = new Float32Array(particleField.count);
     for (let i = 0; i < particleField.count; i++) {
@@ -84,10 +97,7 @@ export default function ParticleField() {
       positions[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
       seeds[i] = Math.random();
     }
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geom.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
-    return geom;
+    return { positions, seeds };
   }, [viewport.width, viewport.height]);
 
   const smoothed = useMemo(() => new THREE.Vector2(0, 0), []);
@@ -115,7 +125,18 @@ export default function ParticleField() {
   });
 
   return (
-    <points geometry={geometry}>
+    <points>
+      {/*
+       * Declarative geometry: R3F attaches it, and disposes it when this
+       * element unmounts or its attributes are replaced. `key` forces a fresh
+       * element when the particle spread is regenerated, so the old geometry
+       * goes through R3F's disposal path rather than being mutated in place
+       * while the GPU still references the previous buffers.
+       */}
+      <bufferGeometry key={`${positions.length}-${viewport.width}x${viewport.height}`}>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-aSeed" args={[seeds, 1]} />
+      </bufferGeometry>
       <particleMaterial ref={materialRef} transparent depthWrite={false} />
     </points>
   );
