@@ -6,7 +6,7 @@ import MotionProvider from "@/components/motion/MotionProvider";
 import Preloader from "@/components/motion/Preloader";
 import RouteTransition from "@/components/motion/RouteTransition";
 import SectionMotion from "@/components/motion/SectionMotion";
-import WebGLBackground from "@/components/webgl/WebGLBackground";
+import WebGLMount from "@/components/webgl/WebGLMount";
 import WebGLErrorBoundary from "@/components/webgl/WebGLErrorBoundary";
 import "@/styles/globals.css";
 
@@ -78,9 +78,14 @@ export default function RootLayout({
         {/*
          * Root-mounted so the GL context survives navigation instead of being
          * torn down and rebuilt per route (Phase 5 requirement).
+         *
+         * WebGLMount, not WebGLBackground: this file is a Server Component, and
+         * next/dynamic with ssr:false is illegal in one. WebGLMount is the
+         * "use client" gate that decides whether the ~355 kB three.js chunk is
+         * fetched at all — on the reduced device tier it never is.
          */}
         <WebGLErrorBoundary>
-          <WebGLBackground />
+          <WebGLMount />
         </WebGLErrorBoundary>
         <Cursor />
         {children}

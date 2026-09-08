@@ -8,17 +8,31 @@ import Lenis from "lenis";
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /*
- * Single-RAF contract (locked by the Phase 3 eng review):
+ * Single-RAF contract (locked by the Phase 3 eng review, amended in Phase 6):
  *
  *   requestAnimationFrame — ONE loop, owned by gsap.ticker
  *     └─ gsap.ticker
  *          ├─ lenis.raf(time * 1000) ──'scroll'──► ScrollTrigger.update()
- *          └─ active tweens (reveals, SplitText, cursor)
+ *          ├─ active tweens (reveals, SplitText, cursor)
+ *          ├─ Preloader progress easing (cold load only)
+ *          └─ WebGL advance(time)   ◄── conditional, and LATE
+ *               joins only when components/webgl/WebGLMount.tsx has cleared
+ *               every gate (motion allowed + WebGL supported + device tier
+ *               "full"), and only from an idle callback AFTER the preloader
+ *               releases. On the reduced tier it never joins at all, because
+ *               the three.js chunk is never fetched.
  *
- * Phase 4's R3F canvas must join THIS ticker (frameloop="never") — never
- * run its own RAF. gsap.matchMedia owns Lenis create/destroy, so toggling
- * the OS reduced-motion setting mid-session tears smooth scroll down (or
- * builds it up) without a reload. Reduced motion = no Lenis, native scroll.
+ * The canvas still uses frameloop="never" and must never run its own RAF —
+ * unchanged. What Phase 6 changed is WHEN it registers, not whether. Anything
+ * counting drivers has to wait for [data-webgl-status] before sampling, or it
+ * measures a window in which the canvas does not yet exist.
+ *
+ * gsap.matchMedia owns Lenis create/destroy, so toggling the OS reduced-motion
+ * setting mid-session tears smooth scroll down (or builds it up) without a
+ * reload. Reduced motion = no Lenis, native scroll.
+ *
+ * NOTE the units: lenis.raf() takes MILLISECONDS (hence * 1000), three.js
+ * advance() takes SECONDS. Same ticker, two conventions.
  */
 export default function MotionProvider() {
   useGSAP(() => {

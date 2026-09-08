@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import gsap from "gsap";
@@ -10,13 +10,27 @@ import { useWebGLSupport } from "./useWebGLSupport";
 import { bloom, dprRange } from "@/lib/webgl/tokens";
 
 /*
- * Single-RAF contract (locked by the Phase 3 eng review, extended in Phase 4):
- * this Canvas uses frameloop="never" and is advanced exclusively from
- * gsap.ticker (see TickerBridge below) — it never runs its own RAF loop.
- * gsap.ticker's callback arg is already in SECONDS (three.js Clock
- * convention, same as what advance() expects) — do NOT multiply by 1000 the
- * way MotionProvider's Lenis bridge does; that conversion is only for
- * Lenis's millisecond-based raf() API.
+ * Single-RAF contract (locked by the Phase 3 eng review, extended in Phase 4,
+ * amended in Phase 6):
+ *
+ *   requestAnimationFrame — ONE loop, owned by gsap.ticker
+ *     └─ gsap.ticker
+ *          ├─ lenis.raf(time * 1000)  (MotionProvider)
+ *          ├─ active tweens (reveals, SplitText, cursor)
+ *          └─ advance(time)  ◄── THIS canvas, frameloop="never"
+ *
+ * Phase 6 changed WHEN this joins, not whether: the canvas is now imported and
+ * mounted from an idle callback after the preloader releases (see
+ * WebGLMount.tsx), so it registers with the ticker LATE rather than at first
+ * paint — and on the reduced device tier it never registers at all. The driver
+ * count is unchanged either way, which is what e2e/motion.spec.ts test (7)
+ * asserts; that test now has to wait for [data-webgl-status] before sampling,
+ * or it would measure a window in which this component simply doesn't exist yet.
+ *
+ * gsap.ticker's callback arg is already in SECONDS (three.js Clock convention,
+ * same as what advance() expects) — do NOT multiply by 1000 the way
+ * MotionProvider's Lenis bridge does; that conversion is only for Lenis's
+ * millisecond-based raf() API.
  *
  * advance() runs OUTSIDE React's render cycle (invoked imperatively from the
  * gsap.ticker callback, not scheduled by React) -- a throw in here would
@@ -27,10 +41,20 @@ import { bloom, dprRange } from "@/lib/webgl/tokens";
  * (getContextAttributes() returns null while lost) on exactly this path.
  * Caught here so the same failure always resolves to the same fallback.
  */
-function TickerBridge({ onFatalError }: { onFatalError: () => void }) {
+function TickerBridge({ active, onFatalError }: { active: boolean; onFatalError: () => void }) {
   const advance = useThree((state) => state.advance);
 
   useEffect(() => {
+    /*
+     * While the context is lost the canvas is hidden but still mounted (see
+     * below), so without this guard the ticker would keep driving advance()
+     * and both useFrame callbacks would keep running every frame — full CPU
+     * and GPU cost for something nobody can see, indefinitely. Not registering
+     * at all while lost is cheaper than registering and returning early, and
+     * it keeps the "one driver" accounting honest.
+     */
+    if (!active) return;
+
     const tick = (time: number) => {
       try {
         advance(time);
@@ -41,42 +65,35 @@ function TickerBridge({ onFatalError }: { onFatalError: () => void }) {
     };
     gsap.ticker.add(tick);
     return () => gsap.ticker.remove(tick);
-  }, [advance, onFatalError]);
+  }, [active, advance, onFatalError]);
 
   return null;
 }
 
-/** Gated the same way Cursor.tsx gates itself: reactive to the OS toggling mid-session. */
-const MOTION_QUERY = "(prefers-reduced-motion: no-preference)";
-
 /**
- * Root-layout-mounted, persistent WebGL background (same pattern as
- * MotionProvider/Cursor) — fixed full-viewport, behind {children}. Mounting
- * here (not inside Hero) is required so Phase 5 can keep the canvas alive
- * across route navigation instead of tearing it down per page.
+ * The WebGL background itself. Fixed full-viewport, behind {children}.
  *
- * Never mounts under reduced motion or when WebGL is unavailable at capability
- * probe time — both fall back to the same thing: the static Phase 2 hero,
- * unmodified. But once mounted, a later context LOSS does not unmount the
- * Canvas — it's only hidden (visibility, not removed). An unmounted canvas's
- * GL context can never fire webglcontextrestored again, so there'd be no path
- * back; keeping the same element alive lets the browser (or, in the Step 5
+ * This component NO LONGER decides whether it should exist — WebGLMount.tsx
+ * owns every mount gate (reduced motion, WebGL capability, device tier) and
+ * only imports this module once they all pass. Keeping those checks here as
+ * well would be redundant, and keeping them here INSTEAD was the Phase 6 bug:
+ * gating inside a statically-imported module still ships the module.
+ *
+ * It is still root-mounted (via WebGLMount in app/layout.tsx, not inside Hero)
+ * so the GL context survives route navigation instead of being torn down and
+ * rebuilt per route — the Phase 5 requirement.
+ *
+ * Once mounted, a later context LOSS does not unmount the Canvas — it is only
+ * hidden (visibility, not removed) and the ticker is detached. An unmounted
+ * canvas's GL context can never fire webglcontextrestored again, so there'd be
+ * no path back; keeping the same element alive lets the browser (or, in the
  * e2e spec, a forced WEBGL_lose_context/restoreContext() call) recover it.
  */
 export default function WebGLBackground() {
-  const [motionAllowed, setMotionAllowed] = useState(false);
   const { status, setStatus } = useWebGLSupport();
   const onFatalError = useCallback(() => setStatus("lost"), [setStatus]);
 
-  useEffect(() => {
-    const media = window.matchMedia(MOTION_QUERY);
-    const sync = () => setMotionAllowed(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
-
-  if (!motionAllowed || status === "checking" || status === "unavailable") return null;
+  if (status === "unavailable") return null;
 
   return (
     <div
@@ -98,7 +115,7 @@ export default function WebGLBackground() {
           canvasEl.addEventListener("webglcontextrestored", () => setStatus("available"));
         }}
       >
-        <TickerBridge onFatalError={onFatalError} />
+        <TickerBridge active={status !== "lost"} onFatalError={onFatalError} />
         <DisplacementPlane />
         <ParticleField />
         {/*
@@ -112,6 +129,11 @@ export default function WebGLBackground() {
          * this); the whole Canvas+GL context (and everything postprocessing
          * allocated) is torn down on unmount via the reduced-motion/no-WebGL/
          * context-loss fallback path above, so there's nothing left to leak.
+         *
+         * These imports are static ON PURPOSE: this whole module is already
+         * behind WebGLMount's dynamic import, so postprocessing rides in the
+         * same lazily-fetched chunk. A second dynamic boundary here would buy
+         * nothing — nobody loads this file without also wanting bloom.
          */}
         <EffectComposer multisampling={0}>
           <Bloom
