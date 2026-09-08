@@ -12,14 +12,48 @@ export function generateStaticParams() {
   return projects.map((project) => ({ slug: project.slug }));
 }
 
+/**
+ * `title` is BARE. The root layout's `title.template` appends `· ${site.name}`,
+ * so composing it here too would render "Panda ERP · Van Anh Quan · Van Anh Quan".
+ *
+ * `openGraph` has to repeat the image even though the root already declares one:
+ * Next merges metadata a level at a time, so a child that specifies `openGraph`
+ * REPLACES the parent's object rather than merging into it. Omitting `images`
+ * here would silently ship case studies with no social card at all.
+ */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const project = projectBySlug(slug);
   if (!project) return {};
 
+  const url = `/work/${project.slug}`;
+
   return {
-    title: `${project.name} · ${site.name}`,
+    title: project.name,
     description: project.summary,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      siteName: site.name,
+      title: `${project.name} · ${site.name}`,
+      description: project.summary,
+      url,
+      locale: "en_US",
+      images: [
+        {
+          url: "/og.png",
+          width: 1200,
+          height: 630,
+          alt: `${site.name} — ${site.title}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${project.name} · ${site.name}`,
+      description: project.summary,
+      images: ["/og.png"],
+    },
   };
 }
 

@@ -3,6 +3,7 @@ import Experience from "@/components/Experience";
 import Hero from "@/components/Hero";
 import SelectedWork from "@/components/SelectedWork";
 import Skills from "@/components/Skills";
+import StructuredData from "@/components/StructuredData";
 
 export default function Home() {
   return (
@@ -12,6 +13,7 @@ export default function Home() {
       <SelectedWork />
       <Experience />
       <Skills />
+      <StructuredData />
     </main>
   );
 }

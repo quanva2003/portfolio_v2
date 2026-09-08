@@ -1,5 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ui } from "@/content";
+
+/*
+ * The route already answers 404, which is what actually keeps this out of an
+ * index. The title is here so a mistyped url does not sit in the visitor's tab
+ * strip and history claiming to be the portfolio home page.
+ */
+export const metadata: Metadata = {
+  title: ui.notFound.title,
+  robots: { index: false, follow: false },
+};
 
 /**
  * Catches both unmatched URLs and `notFound()` from the project case-study
