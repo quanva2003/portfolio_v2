@@ -126,3 +126,53 @@ deliberately kept a manual perf-trace check rather than faked as a headless
 assertion. Lighthouse scores differ from fps in that they genuinely are
 automatable — but they are also variance-prone in CI, so thresholds need tuning
 or the job becomes flaky and gets ignored, which is worse than not having it.
+
+---
+
+## 5. Decide the resting state of the WebGL cursor glow
+
+**Status:** deferred from /qa on 2026-09-08 (QA-002, low severity)
+
+**What:** `lib/webgl/pointer.ts` initialises the shared pointer at `{x: 0, y: 0}`,
+so on a fresh desktop load the cursor-proximity glow sits in the top-left corner
+of the viewport, overlapping the "VAQ" logo, until the visitor moves the mouse.
+
+**Why deferred rather than fixed:** it is cosmetic and short-lived, and the
+obvious fix (seed the initial position to the viewport centre) is a judgement
+call about how the effect should look *at rest* — art direction, not a defect.
+Pre-existing since Phase 4, not a Phase 6 regression.
+
+**Where to start:** `lib/webgl/pointer.ts:17`. Seeding to
+`{ x: innerWidth / 2, y: innerHeight / 2 }` is a one-line change, but note the
+module is evaluated at import time, so it must read the size lazily or guard for
+SSR. Confirm the chosen resting look on both a wide desktop and a phone.
+
+**Related:** the glow is elliptical rather than circular because the falloff uses
+`distance()` in a normalised `[-1,1]` square while the viewport is 16:9. That is
+a property of how the shader was authored, not a bug — but if you touch the
+resting state you may want to decide that deliberately at the same time.
+
+---
+
+## 6. Verify the mobile fallback on real hardware
+
+**Status:** the one Phase 6 QA gate still open.
+
+**What:** Phase 6's gate says "mobile fallback verified on a real device". Every
+check so far is emulation: Playwright device descriptors, Lighthouse mobile
+emulation, and viewport resizing.
+
+**What emulation already proved:** the reduced tier resolves correctly under
+touch emulation, mounts no canvas, and transfers 185 kB of JS across 13 requests
+with no chunk over 60 kB (verified against Lighthouse's own network records, so
+it holds for the scored run and not just a Playwright context).
+
+**What it cannot prove:** that a real phone classifies as the reduced tier. The
+tier reads `(pointer: coarse)` plus `navigator.hardwareConcurrency`, and
+Lighthouse does not emulate `hardwareConcurrency` at all — it throttles CPU via
+CDP and reports the host machine's core count. So a local run classifies with a
+laptop's core count, and the pointer check is doing all the work.
+
+**How to check:** open the deployed site on an actual phone and read
+`window.__webglTier` (exposed by `WebGLMount.tsx`) plus
+`document.querySelectorAll("canvas").length`. Expect `"reduced"` and `0`.
