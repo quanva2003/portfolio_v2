@@ -61,7 +61,42 @@ export default function SectionMotion() {
           // CSS owns the initial opacity: 0; JS only adds the slide offset.
           gsap.set(blocks, { y: 28 });
 
-          ScrollTrigger.batch(blocks, {
+          const reveal = (targets: HTMLElement[]) =>
+            gsap.to(targets, {
+              opacity: 1,
+              y: 0,
+              duration: durations.slow,
+              ease: gsapEase.outExpo,
+              stagger: 0.08,
+              overwrite: true,
+            });
+
+          /*
+           * Anything already on screen when the page arrives is revealed on
+           * ARRIVAL, not on scroll.
+           *
+           * The "top 85%" start line below sits 15% above the bottom edge, so a
+           * block occupying the bottom of the first screen never crosses it
+           * until the visitor scrolls. Hero.tsx is min-h-dvh with justify-end,
+           * which puts its title and tagline exactly there: measured opacity 0
+           * on load at 393x851 (top 744 vs line 723) and 414x896 (788 vs 762) —
+           * iPhone-class sizes — while 1280x720 and 360x640 happened to clear
+           * it. The hero's own copy was blank on arrival on the most common
+           * phones, until the visitor scrolled.
+           *
+           * Splitting on the fold keeps the scroll choreography identical for
+           * everything below it, rather than loosening the start line for all
+           * blocks and making mid-page reveals fire the instant they peek in.
+           */
+          const onScreen = blocks.filter(
+            (el) => el.getBoundingClientRect().top < window.innerHeight,
+          );
+          const belowFold = blocks.filter((el) => !onScreen.includes(el));
+
+          if (onScreen.length > 0) reveal(onScreen);
+          if (belowFold.length === 0) return;
+
+          ScrollTrigger.batch(belowFold, {
             start: "top 85%",
             once: true,
             // GSAP only self-kills a `once:true` trigger when its crossing point
@@ -71,14 +106,7 @@ export default function SectionMotion() {
             // still fires, but the auto-kill is skipped and the trigger leaks.
             // Killing explicitly here makes the "once" contract deterministic.
             onEnter: (batch, triggers) => {
-              gsap.to(batch, {
-                opacity: 1,
-                y: 0,
-                duration: durations.slow,
-                ease: gsapEase.outExpo,
-                stagger: 0.08,
-                overwrite: true,
-              });
+              reveal(batch as HTMLElement[]);
               triggers.forEach((trigger) => trigger.kill());
             },
           });
