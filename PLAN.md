@@ -448,6 +448,10 @@ Run /ship.
 
 **QA gate status:** production build clean ✅ · OG card renders and is verified 1200×630 from the PNG's own IHDR ✅ · GitHub link verified live ✅ · LinkedIn returns LinkedIn's logged-out authwall (HTTP 999), so the url is well-formed but existence is unconfirmed without an authenticated session ⚠️ · **social-debugger preview and "analytics firing in prod" both remain OPEN — neither can be checked before the deploy lands.**
 
+**Open manual step — the domain cutover.** `quanva-portfolio.vercel.app` still serves the PREVIOUS portfolio (v1). v2 is taking that domain over — it is the url on the CV — but the move has to happen in the Vercel dashboard (rename the project, or detach the domain from v1 and attach it to `portfolio_v2`, project `prj_p5LazUSmWGS4xvym64cyNcMF422E`). Nothing in the codebase blocks on it: a Vercel build always has `VERCEL_PROJECT_PRODUCTION_URL`, so a deployed page resolves to its own domain and can never point at v1. The one artefact that hardcodes the domain is `public/og.png`, whose footer renders it as text; if the plan changes and v2 lands somewhere else, update `FALLBACK_ORIGIN` in `lib/site-url.ts` and re-run `node scripts/generate-brand-assets.mjs`.
+
+**Also unverified from here:** the Vercel CLI token in this environment has expired (`vercel whoami` → "The specified token is not valid"), so the deploy could not be triggered or confirmed from the command line. The push to `main` is expected to deploy via the GitHub integration.
+
 ---
 
 ## Suggested sequencing / effort
