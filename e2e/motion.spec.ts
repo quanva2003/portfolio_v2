@@ -159,6 +159,18 @@ test.describe("fine pointer (desktop)", () => {
     await page.goto("/");
     await waitForPageReady(page);
     await page.waitForFunction(() => window.__lenis !== undefined);
+
+    /*
+     * Phase 6: the canvas joins gsap.ticker LATE (idle callback after the
+     * preloader). Sampling immediately would measure a window in which the
+     * WebGL layer does not exist yet -- the test would still pass, but it would
+     * have silently stopped covering the case it was written for: that adding
+     * the canvas does NOT add a second driver. Wait for it to be present first.
+     */
+    await expect
+      .poll(() => page.locator('[data-webgl-status="available"]').count(), { timeout: 15_000 })
+      .toBe(1);
+
     await page.mouse.wheel(0, 600);
 
     // countRafDrivers() counts SELF-SUSTAINING loops only -- see e2e/helpers.ts
