@@ -139,7 +139,7 @@ of the viewport, overlapping the "VAQ" logo, until the visitor moves the mouse.
 
 **Why deferred rather than fixed:** it is cosmetic and short-lived, and the
 obvious fix (seed the initial position to the viewport centre) is a judgement
-call about how the effect should look *at rest* — art direction, not a defect.
+call about how the effect should look _at rest_ — art direction, not a defect.
 Pre-existing since Phase 4, not a Phase 6 regression.
 
 **Where to start:** `lib/webgl/pointer.ts:17`. Seeding to
@@ -176,3 +176,63 @@ laptop's core count, and the pointer check is doing all the work.
 **How to check:** open the deployed site on an actual phone and read
 `window.__webglTier` (exposed by `WebGLMount.tsx`) plus
 `document.querySelectorAll("canvas").length`. Expect `"reduced"` and `0`.
+
+---
+
+## 7. The site's project set predates the current CV
+
+**Status:** surfaced during the Phase 7 content proofread (2026-09-08). NOT a
+defect — a content decision that needs the one person who knows the answer.
+
+**What:** `content/projects.ts` was written from an earlier CV. The current CV
+(`VanAnhQuan_FrontendDeveloper.pdf`, revised 2026-08-26) presents a different,
+deeper set of work:
+
+| Site today                                                | Current CV                                                                                                                                                                                                             |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tamda Shipment** — shipment scheduling, trip management | **Tamda Express** — logistics _dispatch_ for a European delivery operation. React 19, Vite, TomTom Maps. Largest code owner ahead of six engineers; owned the mapping layer; distributed order locking over WebSocket. |
+| **Panda ERP** — POS/KDS/inventory, 3 highlights           | Same product, far more specific: primary owner of the POS surface, designed the first KDS release, built the realtime socket layer, fixed a named state-clobbering defect.                                             |
+| **Skyline** — school communication app                    | **Absent.** Cut from this revision for focus — it is real and appears in every earlier CV, including the mobile one (with VNCaps alongside it).                                                                        |
+| —                                                         | **Panda CMS** — multi-tenant website builder. Next.js 15, Puck editor, NextAuth v5, subdomain multi-tenancy in middleware. **Missing from the site entirely.**                                                         |
+
+The CV also now leads as a _Frontend Engineer_ with an "AI in my workflow"
+section, neither of which the site reflects.
+
+**Why this was not just fixed:** the Phase 7 prompt scoped the proofread to
+"names, links, dates". Those were corrected. Everything in the table above is a
+rewrite of the portfolio's substance — which projects appear, under what names,
+and how they are told. That is the author's call, not a mechanical correction,
+and guessing wrong makes the site _less_ accurate than leaving it consistent
+with a CV that was true when it was written.
+
+**What WAS fixed in Phase 7** (unambiguous factual errors, not judgement calls):
+
+- Dan Solutions rendered as **"Present"** for a role the CV ends in Aug 2026.
+  A portfolio claiming a current job the holder has left is the one error a
+  reader is guaranteed to check.
+- The General Era internship showed "2023 - 2023"; it ran Aug 2023 – Feb 2024.
+- `tel:` used the national form `0941697009`, which does not dial from outside
+  Vietnam. Now E.164, guarded by `e2e/seo.spec.ts` test (10).
+
+**Where to start if picked up:** `content/projects.ts` is the only file that
+needs to change for three of the four rows — the work grid, the case-study
+routes, `generateStaticParams` and `app/sitemap.ts` all derive from that array,
+so adding Panda CMS or renaming Tamda is a content edit, not a routing one.
+
+**Two constraints that will bite:**
+
+1. **Renaming Tamda changes its slug**, and the slug is the case-study URL. If
+   the site has been shared or indexed by then, keep `tamda-shipment` as the
+   slug and change only `name`, or add a redirect. `e2e/seo.spec.ts` (3) and (7)
+   assert every slug appears in the sitemap and is canonical to itself.
+2. **`ProjectMedia` owns `view-transition-name` per slug** (TODOS #2). Adding a
+   project is safe; changing a slug must change it on both the list and detail
+   side or the route morph loses its pair — `e2e/transitions.spec.ts` (4)
+   guards exactly this.
+
+**Also worth deciding at the same time:** whether the hero still reads
+"Front-End Developer" (`content/site.ts`) when the CV now says Frontend
+Engineer, and whether `about.paragraphs`' "about two years of experience" should
+become a role-count or seniority claim instead of a duration that silently ages.
+The OG card renders `site.name`/`title`/`tagline`, so re-run
+`node scripts/generate-brand-assets.mjs` after touching any of them.
