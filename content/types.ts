@@ -48,7 +48,10 @@ export interface SkillGroup {
 
 export interface Contact {
   email: string;
+  /** Display form, spaced for reading. */
   phone: string;
+  /** E.164, for the `tel:` href — dialable from outside Vietnam. */
+  phoneHref: string;
   github: string;
   linkedin: string;
 }

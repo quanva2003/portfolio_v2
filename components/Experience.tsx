@@ -16,7 +16,10 @@ export default function Experience() {
           <li
             data-reveal
             key={`${entry.company}-${entry.start}`}
-            className="border-line grid gap-2 border-t py-8 first:border-t-0 first:pt-0 md:grid-cols-[10rem_1fr] md:gap-8"
+            /* 12rem, not 10: the date column now carries "Aug 2023 - Feb 2024",
+               which is 19 mono characters and lands within a pixel of a 10rem
+               track — one font fallback away from overflowing into the role. */
+            className="border-line grid gap-2 border-t py-8 first:border-t-0 first:pt-0 md:grid-cols-[12rem_1fr] md:gap-8"
           >
             <p className="text-small text-fg-muted pt-1.5 font-mono">
               {entry.start} - {entry.end ?? ui.present}

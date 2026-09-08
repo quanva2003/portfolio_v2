@@ -56,7 +56,7 @@ export default function ContactFooter() {
           <li>
             <Magnetic>
               <a
-                href={`tel:${contact.phone}`}
+                href={`tel:${contact.phoneHref}`}
                 className="rounded-pill border-line text-small text-fg hover:border-fg-muted hover:bg-raised inline-block border px-6 py-2.5 font-mono transition-colors duration-(--dur-fast) active:scale-[0.98]"
               >
                 {contact.phone}
