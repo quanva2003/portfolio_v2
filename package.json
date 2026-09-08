@@ -36,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.20",
     "eslint-config-prettier": "^10.1.8",
+    "lighthouse": "^13.4.1",
     "prettier": "^3.9.4",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4",
