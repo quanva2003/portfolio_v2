@@ -35,7 +35,12 @@
   --color-line: #26282d; /* hairline borders */
   --color-fg: #e9eaec; /* primary text, ~15:1 on ink */
   --color-fg-muted: #9ba0a8; /* secondary text, ~7:1 on ink */
-  --color-fg-faint: #62666e; /* large decorative text only, fails AA at body size */
+  /* 3.42:1 on ink, 3.07:1 on raised. Both clear WCAG AA's 3:1 LARGE-text bar and
+     both fail its 4.5:1 normal-text bar — so this token is only legal at >=24px
+     regular or >=18.66px bold. "Large" is that threshold, not a vibe: a 23px
+     regular label using this is a real AA failure (Lighthouse caught exactly
+     that on ProjectMedia's placeholder). Below the threshold, use fg-muted. */
+  --color-fg-faint: #62666e;
   --color-ember: #f75a2c; /* the single accent, ~5.6:1 on ink */
   --color-ember-deep: #c93d16; /* accent pressed state, borders on ember */
   --color-white: #ffffff;

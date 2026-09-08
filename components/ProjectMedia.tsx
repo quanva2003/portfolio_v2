@@ -30,10 +30,20 @@ const ASPECT = {
   hero: "aspect-video md:aspect-[21/9]",
 } as const;
 
+/*
+ * Label colour is per-variant, and the reason is contrast, not taste.
+ *
+ * fg-faint is 3.07:1 on the raised frame — legal only at WCAG AA's LARGE-text
+ * threshold (>=24px regular). `display` clears that comfortably at every
+ * viewport. `title` does NOT: its clamp resolves to ~23px at 393px, just under
+ * the line, which Lighthouse flagged as a real color-contrast failure. The card
+ * variant therefore steps up to fg-muted (6.7:1 on raised) rather than the type
+ * scale being bent to rescue a placeholder.
+ */
 const LABEL_SIZE = {
-  flagship: "text-display",
-  card: "text-title",
-  hero: "text-display",
+  flagship: "text-display text-fg-faint",
+  card: "text-title text-fg-muted",
+  hero: "text-display text-fg-faint",
 } as const;
 
 export type ProjectMediaVariant = keyof typeof ASPECT;
@@ -53,7 +63,7 @@ export default function ProjectMedia({
     >
       {/* TODO: real product screenshot for this project mounts here */}
       <span
-        className={`font-display text-fg-faint px-6 text-center uppercase select-none ${LABEL_SIZE[variant]}`}
+        className={`font-display px-6 text-center uppercase select-none ${LABEL_SIZE[variant]}`}
       >
         {project.name}
       </span>
