@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { projects, projectBySlug, site, ui } from "@/content";
@@ -62,7 +63,7 @@ function SpecBlock({ label, children }: { label: string; children: React.ReactNo
   return (
     <section
       aria-labelledby={`spec-${label.replace(/\s+/g, "-").toLowerCase()}`}
-      className="border-line py-block grid gap-6 border-t md:grid-cols-12 md:gap-x-6"
+      className="border-line py-stack grid gap-6 border-t md:grid-cols-12 md:gap-x-6"
     >
       <h2
         id={`spec-${label.replace(/\s+/g, "-").toLowerCase()}`}
@@ -122,7 +123,7 @@ export default async function ProjectCaseStudy({ params }: PageProps) {
   return (
     <main id="main" tabIndex={-1} className="max-w-page px-gutter mx-auto w-full">
       <article>
-        <header className="pb-block flex flex-col gap-6 pt-32">
+        <header className="pb-stack flex flex-col gap-6 pt-32">
           <TransitionLink
             href="/#work"
             className="text-micro text-fg-muted hover:text-fg inline-flex w-fit items-center gap-2 font-mono uppercase transition-colors duration-(--dur-fast)"
@@ -170,6 +171,40 @@ export default async function ProjectCaseStudy({ params }: PageProps) {
           <SpecBlock label={ui.project.results}>
             <MarkerList items={project.detail.results} marker="rule" />
           </SpecBlock>
+
+          {/*
+           * Everything after media[0], which the hero already showed. Rendered
+           * only when there is something left, so a project with one image (or
+           * none) gets no empty heading.
+           */}
+          {project.media.length > 1 && (
+            <SpecBlock label={ui.project.gallery}>
+              <ul className="grid gap-6 sm:grid-cols-2">
+                {project.media.slice(1).map((image) => (
+                  <li
+                    key={image.src}
+                    /*
+                     * No fixed aspect here, unlike the hero frame: these images
+                     * are a mix of 21:9 tablet captures and tall phone
+                     * screenshots, and forcing one ratio would crop the phones
+                     * to a letterbox. `h-auto` lets each keep its own shape, and
+                     * the intrinsic width/height still reserve the space.
+                     */
+                    className="rounded-media border-line bg-raised overflow-hidden border"
+                  >
+                    <Image
+                      src={image.src}
+                      alt={image.alt}
+                      width={image.width}
+                      height={image.height}
+                      sizes="(min-width: 640px) 45vw, 100vw"
+                      className="h-auto w-full"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </SpecBlock>
+          )}
         </div>
       </article>
     </main>

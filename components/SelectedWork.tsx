@@ -118,7 +118,7 @@ export default function SelectedWork() {
       <h2 data-split id="work-heading" className="font-display text-display uppercase">
         {ui.sections.work}
       </h2>
-      <ul className="mt-block grid grid-cols-1 gap-x-6 gap-y-16 lg:grid-cols-12">
+      <ul className="mt-stack grid grid-cols-1 gap-x-6 gap-y-16 lg:grid-cols-12">
         {flagship.map((project) => (
           <li key={project.slug} className="lg:col-span-12">
             <FlagshipCard project={project} />

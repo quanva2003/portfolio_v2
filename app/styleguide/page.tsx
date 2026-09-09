@@ -18,7 +18,7 @@ const TYPE_RAMP = [
     token: "text-display",
     clamp: "clamp(2.5rem, 3.7vw, 5.5rem)",
     className: "font-display text-display uppercase",
-    sample: "Selected Work",
+    sample: "Projects",
   },
   {
     token: "text-headline",
@@ -71,17 +71,25 @@ const COLORS = [
   { token: "ember-deep", hex: "#C93D16", swatch: "bg-ember-deep", note: "accent pressed state" },
 ] as const;
 
+/*
+ * `clamp` here is copy, not the source — the real values live in
+ * styles/globals.css. The two had already drifted (this table claimed
+ * `3vw` and `9vw` where the tokens say `2rem + 3vw` and `5rem + 9vw`),
+ * which is the whole failure mode of a hand-copied styleguide. Re-check
+ * these strings against the theme whenever a spacing token moves.
+ */
 const SPACING = [
   { token: "gutter", clamp: "clamp(1.25rem, 4vw, 4rem)", width: "w-gutter", note: "page edges" },
   {
-    token: "block",
-    clamp: "clamp(2.5rem, 3vw, 5rem)",
-    width: "w-block",
+    /* named `stack`, not `block` — see the namespace warning in globals.css */
+    token: "stack",
+    clamp: "clamp(2.5rem, 2rem + 3vw, 5rem)",
+    width: "w-stack",
     note: "inside a section",
   },
   {
     token: "section",
-    clamp: "clamp(6rem, 9vw, 12rem)",
+    clamp: "clamp(6rem, 5rem + 9vw, 12rem)",
     width: "w-section",
     note: "between sections",
   },
@@ -89,7 +97,7 @@ const SPACING = [
 
 function SectionHeading({ title, blurb }: { title: string; blurb: string }) {
   return (
-    <div className="mb-block">
+    <div className="mb-stack">
       <h2 className="font-display text-display uppercase">{title}</h2>
       <p className="text-body text-fg-muted mt-4 max-w-[55ch]">{blurb}</p>
     </div>
@@ -100,7 +108,7 @@ export default function StyleguidePage() {
   return (
     <main className="max-w-page px-gutter mx-auto w-full">
       {/* intro */}
-      <header className="pb-block flex min-h-[60dvh] flex-col justify-end gap-6">
+      <header className="pb-stack flex min-h-[60dvh] flex-col justify-end gap-6">
         <h1 className="font-display text-display-xl uppercase">Styleguide</h1>
         <p className="text-lead text-fg-muted max-w-[55ch]">
           The token layer for this portfolio. Dark-locked, one accent, sharp surfaces, pill

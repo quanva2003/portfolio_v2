@@ -15,4 +15,18 @@ export const contact: Contact = {
   phoneHref: "+84941697009",
   github: "https://github.com/quanva2003",
   linkedin: "https://www.linkedin.com/in/wuanvan5076",
+  /*
+   * Public by intent, confirmed 2026-09-08. It lives under `public/`, which
+   * Next.js serves verbatim — so it was already downloadable before anything
+   * linked to it, just undiscoverable. Linking it makes the file a feature
+   * rather than an accident.
+   *
+   * `href` is the path on disk; `downloadAs` is what the browser saves. Keeping
+   * them separate means the file can be renamed or versioned on disk without
+   * changing the filename that ends up in a recruiter's downloads folder.
+   */
+  resume: {
+    href: "/assets/VanAnhQuan_FrontendDeveloper.pdf",
+    downloadAs: "Van Anh Quan - Frontend Developer.pdf",
+  },
 };

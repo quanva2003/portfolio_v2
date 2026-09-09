@@ -11,7 +11,7 @@ export default function Skills() {
       <h2 data-split id="skills-heading" className="font-display text-display uppercase">
         {ui.sections.skills}
       </h2>
-      <div className="mt-block grid gap-x-8 gap-y-10 sm:grid-cols-2">
+      <div className="mt-stack grid gap-x-8 gap-y-10 sm:grid-cols-2">
         {skills.map((group) => (
           <div data-reveal key={group.label}>
             <h3 className="text-small text-fg-muted">{group.label}</h3>

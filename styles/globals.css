@@ -84,9 +84,30 @@
   --text-micro--letter-spacing: 0.08em;
 
   /* ---- layout ---- */
+  /*
+   * A key in the `--spacing-*` namespace must never be one of `block`, `flex`,
+   * `grid` or `table`.
+   *
+   * Tailwind v4.3 generates logical-size utilities from this namespace —
+   * `inline-<key>` -> inline-size, `block-<key>` -> block-size. Those four keys
+   * are the ones where `inline-<key>` collides with a STATIC display utility
+   * (`inline-block`, `inline-flex`, `inline-grid`, `inline-table`), and the
+   * generated width rule is emitted after the display rule, so it wins.
+   *
+   * This token was `--spacing-block` and cost real bugs before it was found:
+   * every `inline-block` element on the site — the three contact pills, the
+   * 404 button, and Magnetic's wrapper span around every magnetic control —
+   * was silently forced to clamp(2.5rem, 2rem + 3vw, 5rem) wide. At 1440px
+   * that is 75.19px, so "GitHub" overflowed its own pill and the phone number
+   * wrapped onto four lines. `w-fit` did not rescue the 404 button, because
+   * `.inline-block` is emitted after `.w-fit`.
+   *
+   * scripts/check-theme-tokens.mjs enforces the rule; e2e/contact-pills.spec.ts
+   * catches the symptom.
+   */
   --spacing-gutter: clamp(1.25rem, 4vw, 4rem); /* page edge padding */
   --spacing-section: clamp(6rem, 5rem + 9vw, 12rem); /* between sections */
-  --spacing-block: clamp(2.5rem, 2rem + 3vw, 5rem); /* inside a section */
+  --spacing-stack: clamp(2.5rem, 2rem + 3vw, 5rem); /* inside a section */
   --container-page: 90rem; /* 1440px content cap */
 
   /* ---- shape: sharp surfaces, pill controls ---- */

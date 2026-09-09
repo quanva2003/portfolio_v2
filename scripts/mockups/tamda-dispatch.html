@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tamda Express — dispatch board (mockup)</title>
+    <!--
+      ORIGINAL MOCKUP. Not a screenshot, and deliberately not a reproduction.
+
+      Tamda Express is a client product whose only available screenshot is a
+      logged-in production console full of named EU customers, street addresses,
+      phone numbers and order values. That image can never be published, so this
+      file stands in for it.
+
+      What it reproduces: the SHAPE of a dispatch console as described in
+      content/projects.ts — a map, a trip list, a trip detail panel, order
+      columns. What it deliberately does NOT reproduce: the client's visual
+      design, brand colours, logo, layout proportions, or any real data. Every
+      name, address, number and code below is invented. It is drawn in this
+      site's own palette so the work grid reads as one system.
+
+      If you cannot tell whether a detail came from the real product or from
+      this design, it does not belong here.
+    -->
+    <style>
+      /* Mirrors styles/globals.css. Kept literal rather than imported: this
+         file is rasterised once by a script, so a build-time dependency on the
+         app's CSS pipeline would buy nothing and could drift silently. */
+      :root {
+        --ink: #0a0b0d;
+        --surface: #101114;
+        --raised: #17181c;
+        --line: #26282d;
+        --fg: #e9eaec;
+        --fg-muted: #9ba0a8;
+        --fg-faint: #62666e;
+        --ember: #f75a2c;
+        --ember-deep: #c93d16;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        width: 1680px;
+        height: 720px;
+        background: var(--ink);
+        color: var(--fg);
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 12px;
+        display: grid;
+        grid-template-columns: 1fr 330px 300px;
+        overflow: hidden;
+      }
+      .mono {
+        font-family: "Cascadia Mono", "Consolas", ui-monospace, monospace;
+      }
+
+      /* ---- map pane ---- */
+      .map {
+        position: relative;
+        background: var(--surface);
+        border-right: 1px solid var(--line);
+        overflow: hidden;
+      }
+      /* Abstract road graph — geometry only, no real geography. */
+      .roads {
+        position: absolute;
+        inset: 0;
+        opacity: 0.5;
+      }
+      .marker {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        transform: translate(-50%, -50%);
+        border: 2px solid var(--ink);
+      }
+      .marker.done {
+        background: var(--fg-faint);
+      }
+      .marker.active {
+        background: var(--ember);
+        box-shadow: 0 0 0 5px rgba(247, 90, 44, 0.16);
+      }
+      .marker.queued {
+        background: var(--fg-muted);
+      }
+      .cluster {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        width: 26px;
+        height: 26px;
+        border-radius: 999px;
+        background: rgba(23, 24, 28, 0.92);
+        border: 1px solid var(--line);
+        color: var(--fg-muted);
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .popup {
+        position: absolute;
+        left: 46%;
+        top: 30%;
+        width: 210px;
+        background: var(--raised);
+        border: 1px solid var(--line);
+        border-radius: 2px;
+        padding: 10px 12px;
+      }
+      .popup h4 {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .popup .row {
+        display: flex;
+        justify-content: space-between;
+        color: var(--fg-muted);
+        font-size: 11px;
+        padding: 2px 0;
+      }
+      .maptools {
+        position: absolute;
+        left: 16px;
+        top: 16px;
+        display: flex;
+        gap: 6px;
+      }
+      .chip {
+        border: 1px solid var(--line);
+        background: rgba(10, 11, 13, 0.82);
+        color: var(--fg-muted);
+        border-radius: 999px;
+        padding: 5px 11px;
+        font-size: 11px;
+      }
+      .chip.on {
+        color: var(--ink);
+        background: var(--ember);
+        border-color: var(--ember);
+      }
+      .scalebar {
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+        color: var(--fg-faint);
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .scalebar i {
+        display: block;
+        width: 54px;
+        height: 1px;
+        background: var(--fg-faint);
+      }
+
+      /* ---- shared panel chrome ---- */
+      .pane {
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .pane:last-child {
+        border-right: 0;
+      }
+      .pane > header {
+        padding: 13px 14px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .pane > header h3 {
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fg-muted);
+        font-weight: 500;
+      }
+      .count {
+        color: var(--fg-faint);
+        font-size: 10px;
+      }
+      .scroll {
+        overflow: hidden;
+      }
+
+      /* ---- trip list ---- */
+      .trip {
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: 22px 1fr auto;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .trip.sel {
+        background: var(--raised);
+        box-shadow: inset 2px 0 0 var(--ember);
+      }
+      .trip .idx {
+        color: var(--fg-faint);
+        font-size: 10px;
+      }
+      .trip .name {
+        font-size: 12px;
+      }
+      .trip .meta {
+        color: var(--fg-muted);
+        font-size: 10.5px;
+        margin-top: 3px;
+      }
+      .trip .val {
+        color: var(--fg-muted);
+        font-size: 10.5px;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      /* ---- detail panel ---- */
+      .detail {
+        padding: 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      .detail h4 {
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+      .detail .sub {
+        color: var(--fg-muted);
+        font-size: 10.5px;
+        margin-bottom: 12px;
+      }
+      .kv {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-top: 1px solid var(--line);
+        font-size: 11px;
+        color: var(--fg-muted);
+      }
+      .kv b {
+        color: var(--fg);
+        font-weight: 500;
+      }
+
+      /* The locking state — the feature worth showing, since it is the one
+         thing on this board that is not obvious from a table of rows. */
+      .lock {
+        margin: 12px 14px;
+        border: 1px solid var(--ember-deep);
+        background: rgba(247, 90, 44, 0.08);
+        border-radius: 2px;
+        padding: 9px 11px;
+      }
+      .lock .t {
+        color: var(--ember);
+        font-size: 10px;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .lock .b {
+        color: var(--fg-muted);
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      /* ---- order column ---- */
+      .order {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      .order .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .order .id {
+        color: var(--fg-faint);
+        font-size: 10px;
+      }
+      .order .who {
+        font-size: 11.5px;
+        margin: 3px 0 2px;
+      }
+      .order .addr {
+        color: var(--fg-muted);
+        font-size: 10.5px;
+      }
+      .badge {
+        font-size: 9.5px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--fg-muted);
+      }
+      .badge.held {
+        border-color: var(--ember-deep);
+        color: var(--ember);
+      }
+      .badge.set {
+        border-color: var(--fg-faint);
+        color: var(--fg-faint);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- MAP -->
+    <div class="map">
+      <svg class="roads" viewBox="0 0 1050 720" preserveAspectRatio="none">
+        <!-- Abstract street grid. Geometry only: no real city, no real geography. -->
+        <g stroke="#1b1d22" fill="none" stroke-width="1">
+          <path d="M-20 60 L1070 92" />
+          <path d="M-20 150 L1070 176" />
+          <path d="M-20 300 L1070 322" />
+          <path d="M-20 372 L1070 392" />
+          <path d="M-20 545 L1070 528" />
+          <path d="M-20 640 L1070 616" />
+          <path d="M80 -20 L110 720" />
+          <path d="M255 -20 L280 720" />
+          <path d="M430 -20 L455 720" />
+          <path d="M610 -20 L632 720" />
+          <path d="M780 -20 L800 720" />
+          <path d="M950 -20 L965 720" />
+        </g>
+        <g stroke="#2a2d33" fill="none" stroke-width="1.8">
+          <path d="M-20 210 L400 250 L700 190 L1070 240" />
+          <path d="M-20 470 L330 430 L640 500 L1070 450" />
+          <path d="M150 -20 L200 300 L160 720" />
+          <path d="M520 -20 L560 350 L500 720" />
+          <path d="M860 -20 L820 320 L880 720" />
+        </g>
+        <!-- water / park masses, so the ground is not a uniform void -->
+        <g fill="#131519">
+          <path d="M-20 -20 L250 -20 L300 70 L180 150 L-20 120 Z" />
+          <path d="M700 560 L900 530 L1000 640 L860 720 L690 700 Z" />
+        </g>
+        <!-- rendered route for the selected trip -->
+        <path
+          d="M205 300 L360 262 L520 300 L560 352 L700 330 L820 320"
+          stroke="#f75a2c"
+          stroke-width="2.5"
+          fill="none"
+          stroke-linecap="round"
+        />
+        <path
+          d="M205 300 L150 430 L300 505 L470 545"
+          stroke="#3a3d44"
+          stroke-width="2"
+          fill="none"
+          stroke-dasharray="5 5"
+        />
+      </svg>
+
+      <div class="marker done" style="left: 19.5%; top: 41.7%"></div>
+      <div class="marker done" style="left: 34.3%; top: 36.4%"></div>
+      <div class="marker active" style="left: 49.5%; top: 41.7%"></div>
+      <div class="marker queued" style="left: 53.3%; top: 48.9%"></div>
+      <div class="marker queued" style="left: 66.7%; top: 45.8%"></div>
+      <div class="marker queued" style="left: 78.1%; top: 44.4%"></div>
+      <div class="marker queued" style="left: 27%; top: 62%"></div>
+      <div class="marker queued" style="left: 61%; top: 68%"></div>
+      <div class="marker queued" style="left: 14.3%; top: 59.7%"></div>
+      <div class="marker queued" style="left: 28.6%; top: 70.1%"></div>
+      <div class="marker queued" style="left: 44.8%; top: 75.7%"></div>
+      <div class="marker done" style="left: 8.6%; top: 27.8%"></div>
+      <div class="marker done" style="left: 24.8%; top: 21.5%"></div>
+      <div class="marker queued" style="left: 71.4%; top: 25.7%"></div>
+      <div class="marker queued" style="left: 86.7%; top: 30.6%"></div>
+      <div class="marker queued" style="left: 90.5%; top: 61.1%"></div>
+      <div class="marker queued" style="left: 76.2%; top: 72.2%"></div>
+      <div class="marker queued" style="left: 38.1%; top: 55.6%"></div>
+      <div class="marker queued" style="left: 57.1%; top: 30.6%"></div>
+      <div class="marker queued" style="left: 6.7%; top: 47.2%"></div>
+
+      <div class="cluster" style="left: 33%; top: 86%">12</div>
+      <div class="cluster" style="left: 88%; top: 16%">7</div>
+
+      <div class="maptools">
+        <span class="chip on">Orders</span>
+        <span class="chip">Vehicles</span>
+        <span class="chip">Unassigned</span>
+      </div>
+
+      <div class="popup">
+        <h4>Stop 3 &middot; Depot North</h4>
+        <div class="row"><span>Order</span><span class="mono">#A-4192</span></div>
+        <div class="row"><span>Window</span><span class="mono">09:40 – 10:10</span></div>
+        <div class="row"><span>Weight</span><span class="mono">184 kg</span></div>
+        <div class="row"><span>Status</span><span class="mono">In transit</span></div>
+      </div>
+
+      <div class="scalebar"><i></i><span class="mono">5 km</span></div>
+    </div>
+
+    <!-- TRIP LIST -->
+    <div class="pane">
+      <header>
+        <h3>Trips &middot; today</h3>
+        <span class="count mono">6 / 9</span>
+      </header>
+      <div class="scroll">
+        <div class="trip sel">
+          <span class="idx mono">01</span>
+          <div>
+            <div class="name">Route North A</div>
+            <div class="meta mono">07:00 &middot; 12 stops &middot; 148 km</div>
+          </div>
+          <span class="val mono">2 140 kg</span>
+        </div>
+        <div class="trip">
+          <span class="idx mono">02</span>
+          <div>
+            <div class="name">Route North B</div>
+            <div class="meta mono">07:30 &middot; 9 stops &middot; 96 km</div>
+          </div>
+          <span class="val mono">1 380 kg</span>
+        </div>
+        <div class="trip">
+          <span class="idx mono">03</span>
+          <div>
+            <div class="name">City Loop</div>
+            <div class="meta mono">08:15 &middot; 21 stops &middot; 44 km</div>
+          </div>
+          <span class="val mono">870 kg</span>
+        </div>
+        <div class="trip">
+          <span class="idx mono">04</span>
+          <div>
+            <div class="name">Route East</div>
+            <div class="meta mono">08:40 &middot; 7 stops &middot; 210 km</div>
+          </div>
+          <span class="val mono">3 020 kg</span>
+        </div>
+        <div class="trip">
+          <span class="idx mono">05</span>
+          <div>
+            <div class="name">Route South</div>
+            <div class="meta mono">09:05 &middot; 14 stops &middot; 132 km</div>
+          </div>
+          <span class="val mono">1 715 kg</span>
+        </div>
+        <div class="trip">
+          <span class="idx mono">06</span>
+          <div>
+            <div class="name">Overflow / late</div>
+            <div class="meta mono">—</div>
+          </div>
+          <span class="val mono">0 kg</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETAIL + ORDERS -->
+    <div class="pane">
+      <header>
+        <h3>Route North A</h3>
+        <span class="count mono">#T-1187</span>
+      </header>
+
+      <div class="detail">
+        <h4>Driver &middot; unassigned</h4>
+        <p class="sub">Vehicle 2 axles &middot; 3.5 t</p>
+        <div class="kv"><span>Departure</span><b class="mono">07:00</b></div>
+        <div class="kv"><span>Planned</span><b class="mono">148 km &middot; 5 h 20</b></div>
+        <div class="kv"><span>Load</span><b class="mono">2 140 / 3 500 kg</b></div>
+      </div>
+
+      <div class="lock">
+        <div class="t">Order locked</div>
+        <div class="b">#A-4207 is held by another dispatcher. Released on save.</div>
+      </div>
+
+      <header style="border-top: 1px solid var(--line)">
+        <h3>Unassigned orders</h3>
+        <span class="count mono">4</span>
+      </header>
+      <div class="scroll">
+        <div class="order">
+          <div class="top">
+            <span class="id mono">#A-4207</span><span class="badge held">Held</span>
+          </div>
+          <div class="who">Placeholder Trading s.r.o.</div>
+          <div class="addr mono">Sample Street 12 &middot; 210 kg</div>
+        </div>
+        <div class="order">
+          <div class="top">
+            <span class="id mono">#A-4211</span><span class="badge">Ready</span>
+          </div>
+          <div class="who">Example Foods Ltd</div>
+          <div class="addr mono">Demo Avenue 4 &middot; 76 kg</div>
+        </div>
+        <div class="order">
+          <div class="top">
+            <span class="id mono">#A-4218</span><span class="badge">Ready</span>
+          </div>
+          <div class="who">Test Wholesale a.s.</div>
+          <div class="addr mono">Fictional Road 88 &middot; 431 kg</div>
+        </div>
+        <div class="order">
+          <div class="top">
+            <span class="id mono">#A-4224</span><span class="badge set">Assigned</span>
+          </div>
+          <div class="who">Anonymous Retail</div>
+          <div class="addr mono">Invented Lane 7 &middot; 55 kg</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

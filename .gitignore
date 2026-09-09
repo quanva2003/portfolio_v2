@@ -49,3 +49,9 @@ next-env.d.ts
 .gstack/
 # machine-local Claude Code state (settings + absolute-path symlinks into .agents/)
 .claude/
+
+# Source material for design work: raw screenshots, unprocessed portraits,
+# reference captures. NEVER under public/ — Next.js serves that directory
+# verbatim, so a file dropped there is published the moment it is deployed.
+# Only processed, cleared, web-ready derivatives belong in public/.
+/design/source/

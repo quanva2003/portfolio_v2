@@ -1,4 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
   <rect width="32" height="32" fill="#f75a2c"/>
-  <path d="M6.5 8 L16 25 L25.5 8 L20.6 8 L16 16.6 L11.4 8 Z" fill="#0a0b0d"/>
+  <g fill="none" stroke="#0a0b0d" stroke-width="4.2">
+    <ellipse cx="14" cy="13.8" rx="10" ry="8.6"/>
+    <line x1="17" y1="16" x2="27" y2="25"/>
+  </g>
 </svg>

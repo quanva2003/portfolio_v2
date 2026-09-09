@@ -11,7 +11,7 @@ export default function About() {
       <h2 data-split id="about-heading" className="text-headline max-w-[26ch]">
         {about.headline}
       </h2>
-      <div className="mt-block flex max-w-[65ch] flex-col gap-5">
+      <div className="mt-stack flex max-w-[65ch] flex-col gap-5">
         {about.paragraphs.map((paragraph) => (
           <p data-reveal key={paragraph} className="text-lead text-fg-muted">
             {paragraph}
@@ -19,7 +19,8 @@ export default function About() {
         ))}
       </div>
       <p data-reveal className="text-small text-fg-muted mt-10 font-mono">
-        {about.education.degree} · {about.education.school}
+        {about.education.degree} · {about.education.school} · {about.education.start} –{" "}
+        {about.education.end} · GPA {about.education.gpa}
       </p>
     </section>
   );
