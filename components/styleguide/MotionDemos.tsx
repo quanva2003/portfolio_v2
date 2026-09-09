@@ -21,7 +21,7 @@ export default function MotionDemos() {
   const [played, setPlayed] = useState(false);
 
   return (
-    <div className="gap-block flex flex-col">
+    <div className="gap-stack flex flex-col">
       {/* easing comparison */}
       <div>
         <div className="mb-6 flex items-center justify-between gap-4">

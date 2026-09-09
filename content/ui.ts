@@ -12,11 +12,11 @@ export const ui: UiStrings = {
    */
   navLinks: [
     { label: "About", href: "/#about" },
-    { label: "Work", href: "/#work" },
+    { label: "Projects", href: "/#work" },
     { label: "Contact", href: "/#contact" },
   ],
   sections: {
-    work: "Selected Work",
+    work: "Projects",
     experience: "Experience",
     skills: "Skills",
     contact: "Contact",
@@ -25,11 +25,26 @@ export const ui: UiStrings = {
   contactLinks: {
     github: "GitHub",
     linkedin: "LinkedIn",
+    resume: "CV",
+    /*
+     * Appended to the CV link's accessible name, never shown. The size is
+     * interpolated from disk at build time (lib/resume.ts), so the visible
+     * label stays a single word while a screen reader still announces the
+     * format and weight before anyone commits to the download.
+     */
+    resumeHint: "PDF",
   },
   project: {
     eyebrow: "Case study",
+    /*
+     * Shown on the Tamda card and case study only. The other three projects
+     * carry real screenshots, so an unlabelled mockup beside them would read as
+     * a fourth screenshot rather than as an illustration.
+     */
+    mockupNotice: "Illustrative mockup — client UI not shown",
+    gallery: "More views",
     cta: "Read the case study",
-    back: "All work",
+    back: "All projects",
     problem: "The problem",
     role: "Role",
     stack: "Stack",

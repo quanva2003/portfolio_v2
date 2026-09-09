@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { countRafDrivers, waitForPageReady } from "./helpers";
+import { flagshipProject } from "../content/projects";
 
 /*
  * Phase 5 QA-gate specs (PLAN.md Phase 5):
@@ -29,10 +30,17 @@ declare global {
   }
 }
 
-const FLAGSHIP_LINK = 'a[href="/work/panda-erp"]';
+/*
+ * SCOPED TO #work ON PURPOSE. The Experience section now links each role to the
+ * case studies built during it, so `a[href="/work/panda-erp"]` matches twice on
+ * the home page. These specs are about the work GRID's card link, and an
+ * unscoped selector would break again the next time the site links a project
+ * from somewhere new.
+ */
+const FLAGSHIP_LINK = `#work a[href="/work/${flagshipProject.slug}"]`;
 
 /** The name both the work-grid thumbnail and the case-study hero must carry. */
-const SHARED_NAME = "project-media-panda-erp";
+const SHARED_NAME = `project-media-${flagshipProject.slug}`;
 
 const namedElementCount = (page: Page, name: string) =>
   page.evaluate(
@@ -45,17 +53,25 @@ const namedElementCount = (page: Page, name: string) =>
 
 test.describe("case study route", () => {
   test("(1) renders every case-study section on a cold load", async ({ page }) => {
-    await page.goto("/work/panda-erp");
+    await page.goto(`/work/${flagshipProject.slug}`);
     await waitForPageReady(page);
 
-    await expect(page.locator("h1")).toHaveText("Panda ERP");
+    await expect(page.locator("h1")).toHaveText(flagshipProject.name);
     for (const label of ["The problem", "Role", "Stack", "What I shipped", "Results"]) {
       await expect(page.getByRole("heading", { name: label, exact: true })).toBeVisible();
     }
-    // Body copy comes from content/: a missing `detail` block would render
-    // empty sections rather than failing the build, so assert real prose.
-    await expect(page.locator("main")).toContainText("kitchen display system");
-    await expect(page.locator("main")).toContainText("point-of-sale interface");
+    /*
+     * Body copy comes from content/: a missing `detail` block would render
+     * empty sections rather than failing the build, so assert real prose.
+     *
+     * DERIVED from the content module, not transcribed. Hardcoded phrases here
+     * ("point-of-sale interface") silently became untrue the moment the Panda
+     * copy was rewritten against the CV — the assertion caught a copy edit, not
+     * a bug, which is the wrong job for a route test. Reading the source means
+     * this checks what it means to check: that the prose reached the page.
+     */
+    await expect(page.locator("main")).toContainText(flagshipProject.detail.shipped[0]!);
+    await expect(page.locator("main")).toContainText(flagshipProject.detail.problem);
   });
 
   test("(2) an unknown slug 404s", async ({ page }) => {
@@ -71,16 +87,16 @@ test.describe("navigation", () => {
     await waitForPageReady(page);
 
     await page.locator(FLAGSHIP_LINK).click();
-    await expect(page).toHaveURL("/work/panda-erp");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Panda ERP");
+    await expect(page).toHaveURL(`/work/${flagshipProject.slug}`);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(flagshipProject.name);
 
     await page.goBack();
     await expect(page).toHaveURL("/");
     await expect(page.locator(FLAGSHIP_LINK)).toBeVisible();
 
     await page.goForward();
-    await expect(page).toHaveURL("/work/panda-erp");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Panda ERP");
+    await expect(page).toHaveURL(`/work/${flagshipProject.slug}`);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(flagshipProject.name);
   });
 
   test("(4) the shared-element name exists on both sides of the morph", async ({ page }) => {
@@ -91,7 +107,7 @@ test.describe("navigation", () => {
     expect(await namedElementCount(page, SHARED_NAME)).toBe(1);
 
     await page.locator(FLAGSHIP_LINK).click();
-    await expect(page).toHaveURL("/work/panda-erp");
+    await expect(page).toHaveURL(`/work/${flagshipProject.slug}`);
     expect(await namedElementCount(page, SHARED_NAME)).toBe(1);
   });
 
@@ -110,7 +126,7 @@ test.describe("navigation", () => {
     });
 
     await page.locator(FLAGSHIP_LINK).click();
-    await expect(page).toHaveURL("/work/panda-erp");
+    await expect(page).toHaveURL(`/work/${flagshipProject.slug}`);
 
     await expect(page.locator("canvas")).toHaveCount(1);
     await expect.poll(() => page.locator('[data-webgl-status="available"]').count()).toBe(1);
@@ -127,7 +143,7 @@ test.describe("navigation", () => {
     await page.goto("/");
     await waitForPageReady(page);
     await page.locator(FLAGSHIP_LINK).click();
-    await expect(page).toHaveURL("/work/panda-erp");
+    await expect(page).toHaveURL(`/work/${flagshipProject.slug}`);
     await page.waitForFunction(() => window.__lenis !== undefined);
     await page.mouse.wheel(0, 400);
 
@@ -141,7 +157,7 @@ test.describe("navigation", () => {
     await page.goto("/");
     await waitForPageReady(page);
     await page.locator(FLAGSHIP_LINK).click();
-    await expect(page).toHaveURL("/work/panda-erp");
+    await expect(page).toHaveURL(`/work/${flagshipProject.slug}`);
 
     // revertOnUpdate killed the home route's triggers; the case study's own
     // [data-reveal] blocks got fresh ones.
@@ -230,7 +246,7 @@ test.describe("preloader", () => {
     await page.goto("/");
     await waitForPageReady(page);
     await page.locator(FLAGSHIP_LINK).click();
-    await expect(page).toHaveURL("/work/panda-erp");
+    await expect(page).toHaveURL(`/work/${flagshipProject.slug}`);
     await expect(page.locator("[data-preloader]")).toHaveCount(0);
   });
 });
@@ -266,8 +282,8 @@ test.describe("reduced motion", () => {
     });
 
     await page.locator(FLAGSHIP_LINK).click();
-    await expect(page).toHaveURL("/work/panda-erp");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Panda ERP");
+    await expect(page).toHaveURL(`/work/${flagshipProject.slug}`);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(flagshipProject.name);
     expect(await page.evaluate(() => (window as unknown as { __vtCalls: number }).__vtCalls)).toBe(
       0,
     );
@@ -281,7 +297,7 @@ test.describe("no JavaScript", () => {
     await page.goto("/");
     await expect(page.locator(FLAGSHIP_LINK)).toHaveCount(1);
 
-    await page.goto("/work/panda-erp");
+    await page.goto(`/work/${flagshipProject.slug}`);
     const opacities = await page.evaluate(() =>
       Array.from(document.querySelectorAll("[data-reveal], [data-split]")).map(
         (el) => getComputedStyle(el).opacity,

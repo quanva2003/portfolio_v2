@@ -197,7 +197,7 @@ export default function Preloader() {
       data-preloader
       className="bg-ink fixed inset-0 z-[80] flex flex-col justify-end"
     >
-      <div className="max-w-page px-gutter pb-block mx-auto w-full">
+      <div className="max-w-page px-gutter pb-stack mx-auto w-full">
         <div className="flex items-baseline justify-between gap-6">
           <p className="text-micro text-fg-muted font-mono uppercase">{ui.preloader.label}</p>
           {/*

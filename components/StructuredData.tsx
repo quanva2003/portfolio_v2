@@ -1,4 +1,4 @@
-import { about, contact, site } from "@/content";
+import { about, contact, experience, site, skills } from "@/content";
 import { SITE_URL, absoluteUrl } from "@/lib/site-url";
 
 /**
@@ -19,6 +19,8 @@ import { SITE_URL, absoluteUrl } from "@/lib/site-url";
  * next/script's default strategy defers it.
  */
 export default function StructuredData() {
+  const currentEmployer = experience.find((entry) => entry.end === null);
+
   const data = {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -38,6 +40,21 @@ export default function StructuredData() {
       "@type": "CollegeOrUniversity",
       name: about.education.school,
     },
+    /*
+     * `knowsAbout` and `worksFor` are derived, never hand-listed — a second
+     * hand-maintained copy of the skills and employers is exactly how the CV
+     * and this site drifted apart in the first place. Both read from the same
+     * modules the visible sections render, so they cannot disagree with the page.
+     *
+     * `worksFor` names only the CURRENT role: the schema property is present
+     * tense, and there is no current one while the most recent entry has an end
+     * date, so this correctly emits nothing today rather than claiming a job
+     * that ended in Aug 2026.
+     */
+    knowsAbout: skills.flatMap((group) => group.items),
+    ...(currentEmployer
+      ? { worksFor: { "@type": "Organization", name: currentEmployer.company } }
+      : {}),
     sameAs: [contact.github, contact.linkedin],
   };
 

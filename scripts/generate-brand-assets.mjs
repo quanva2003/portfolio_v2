@@ -94,11 +94,11 @@ function ogHtml({ name, title, tagline }, domain) {
     font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase;
     color: ${FG_MUTED};
   }
+  /* The real mark, not a letter set in Archivo — the card has to show the
+     same shape the favicon and the header show. */
   .mark {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 44px; height: 44px; background: ${EMBER}; color: ${INK};
-    font-family: "Archivo", sans-serif; font-weight: 800; font-size: 26px;
-    letter-spacing: 0; line-height: 1;
+    width: 44px; height: 44px; background: ${EMBER};
   }
   h1 {
     font-size: 132px; font-weight: 800; line-height: 0.92;
@@ -117,7 +117,7 @@ function ogHtml({ name, title, tagline }, domain) {
   <div class="glow"></div>
   <div class="grid"><span></span><span></span><span></span><span></span><span></span></div>
   <div class="top">
-    <span class="mark">V</span>
+    <span class="mark">${markSvg(30, INK)}</span>
     <span>${domain}</span>
   </div>
   <h1>${name}</h1>
@@ -129,17 +129,40 @@ function ogHtml({ name, title, tagline }, domain) {
 }
 
 /*
- * The favicon mark. Drawn as a PATH, not as text in a font: a favicon is
- * rasterised by the browser in a context where a webfont is not guaranteed to
- * have loaded, and a fallback face would change the glyph's weight and width.
- * Sharp corners, no radius — the shape rule in globals.css says surfaces are
- * sharp and only interactive controls are pill.
+ * THE MARK. One set of numbers, shared by the SVG favicon below, the raster
+ * icons further down, and components/Mark.tsx which draws it in the page.
+ *
+ * A letter Q: an ellipse wider than it is tall (a nod to the display face's
+ * `wdth 125` axis) with a tail that starts inside the counter and breaks past
+ * the outer edge. Butt caps, no rounding — the shape rule in globals.css says
+ * surfaces are sharp and only interactive controls are pill.
+ *
+ * If these change, change components/Mark.tsx to match, or the mark on the
+ * browser tab stops being the mark on the page.
  */
+const MARK = {
+  cx: 14,
+  cy: 13.8,
+  rx: 10,
+  ry: 8.6,
+  stroke: 4.2,
+  tail: { x1: 17, y1: 16, x2: 27, y2: 25 },
+};
+
 const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
   <rect width="32" height="32" fill="${EMBER}"/>
-  <path d="M6.5 8 L16 25 L25.5 8 L20.6 8 L16 16.6 L11.4 8 Z" fill="${INK}"/>
+  <g fill="none" stroke="${INK}" stroke-width="${MARK.stroke}">
+    <ellipse cx="${MARK.cx}" cy="${MARK.cy}" rx="${MARK.rx}" ry="${MARK.ry}"/>
+    <line x1="${MARK.tail.x1}" y1="${MARK.tail.y1}" x2="${MARK.tail.x2}" y2="${MARK.tail.y2}"/>
+  </g>
 </svg>
 `;
+
+/** The same mark as inline SVG for the OG card, which is rendered in a browser. */
+const markSvg = (size, colour) =>
+  `<svg viewBox="0 0 32 32" width="${size}" height="${size}" fill="none" stroke="${colour}" stroke-width="${MARK.stroke}">` +
+  `<ellipse cx="${MARK.cx}" cy="${MARK.cy}" rx="${MARK.rx}" ry="${MARK.ry}"/>` +
+  `<line x1="${MARK.tail.x1}" y1="${MARK.tail.y1}" x2="${MARK.tail.x2}" y2="${MARK.tail.y2}"/></svg>`;
 
 /*
  * The raster icons are drawn here rather than screenshotted, for a reason that
@@ -151,33 +174,49 @@ const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" wi
  * the mark is six points and two colours — well under the complexity where
  * pulling in a browser to draw it earns its keep.
  */
-const MARK_POLYGON = [
-  [6.5, 8],
-  [16, 25],
-  [25.5, 8],
-  [20.6, 8],
-  [16, 16.6],
-  [11.4, 8],
-];
-
 const hex = (value) => [1, 3, 5].map((i) => parseInt(value.slice(i, i + 2), 16));
 
-function insidePolygon(x, y, polygon) {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, yi] = polygon[i];
-    const [xj, yj] = polygon[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
+/**
+ * Is (x, y) inside the mark, in the 32-unit design space?
+ *
+ * Analytic rather than a polygon test, because a stroked ellipse is an annulus
+ * and a point-in-polygon routine cannot express a hole. Two parts, unioned:
+ *
+ *  - the ring, as the area between an outer and an inner ellipse. That is an
+ *    approximation of a stroked path — a true stroke is the set of points within
+ *    half the stroke width of the CURVE, which differs from a scaled ellipse
+ *    away from the axes — but at a 32-unit design space the gap is well under a
+ *    tenth of a unit, and the supersampling below is finer than the error.
+ *  - the tail, as a rectangle around the segment: project onto it, keep the
+ *    projection inside the segment (butt caps, not round), and test the
+ *    perpendicular distance.
+ */
+function insideMark(x, y) {
+  const half = MARK.stroke / 2;
+
+  const dx = x - MARK.cx;
+  const dy = y - MARK.cy;
+  const outer = (dx / (MARK.rx + half)) ** 2 + (dy / (MARK.ry + half)) ** 2;
+  const inner = (dx / (MARK.rx - half)) ** 2 + (dy / (MARK.ry - half)) ** 2;
+  if (outer <= 1 && inner >= 1) return true;
+
+  const { x1, y1, x2, y2 } = MARK.tail;
+  const vx = x2 - x1;
+  const vy = y2 - y1;
+  const lengthSquared = vx * vx + vy * vy;
+  const t = ((x - x1) * vx + (y - y1) * vy) / lengthSquared;
+  if (t < 0 || t > 1) return false;
+  const px = x1 + t * vx - x;
+  const py = y1 + t * vy - y;
+  return Math.sqrt(px * px + py * py) <= half;
 }
 
 /**
- * RGBA pixels for the mark at `size`: an ember tile with the ink V knocked out.
+ * RGBA pixels for the mark at `size`: an ember tile with the ink Q knocked out.
  *
- * 4x4 supersampling per pixel, because the V's diagonals are the whole shape —
- * aliased at 16px they turn into a visible staircase, which is exactly the size
- * the favicon is actually seen at.
+ * 4x4 supersampling per pixel. The mark is a curve and a diagonal, and aliased
+ * at 16px both turn into a visible staircase — which is exactly the size the
+ * favicon is actually seen at.
  */
 function renderMark(size) {
   const [er, eg, eb] = hex(EMBER);
@@ -193,7 +232,7 @@ function renderMark(size) {
         for (let sx = 0; sx < SAMPLES; sx++) {
           const px = (x + (sx + 0.5) / SAMPLES) * scale;
           const py = (y + (sy + 0.5) / SAMPLES) * scale;
-          if (insidePolygon(px, py, MARK_POLYGON)) hits++;
+          if (insideMark(px, py)) hits++;
         }
       }
       const t = hits / (SAMPLES * SAMPLES);
