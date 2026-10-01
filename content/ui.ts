@@ -13,10 +13,12 @@ export const ui: UiStrings = {
   navLinks: [
     { label: "About", href: "/#about" },
     { label: "Projects", href: "/#work" },
+    { label: "Apps", href: "/#apps" },
     { label: "Contact", href: "/#contact" },
   ],
   sections: {
     work: "Projects",
+    apps: "On the stores",
     experience: "Experience",
     skills: "Skills",
     contact: "Contact",
@@ -33,6 +35,20 @@ export const ui: UiStrings = {
      * format and weight before anyone commits to the download.
      */
     resumeHint: "PDF",
+  },
+  /*
+   * "On the stores" rather than "Apps", because the heading has to carry the
+   * one thing that distinguishes this section from Projects directly above it:
+   * these are not descriptions of work, they are installable products. A reader
+   * who stops at the heading should already know that.
+   */
+  apps: {
+    intro:
+      "Three of the products above shipped to the public app stores. These are the listings — installable today, on the devices they were built for.",
+    availability: "Available on",
+    appStore: "App Store",
+    googlePlay: "Google Play",
+    caseStudy: "Case study",
   },
   project: {
     eyebrow: "Case study",

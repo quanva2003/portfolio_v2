@@ -129,6 +129,7 @@ export interface UiStrings {
   navLinks: NavLink[];
   sections: {
     work: string;
+    apps: string;
     experience: string;
     skills: string;
     contact: string;
@@ -141,6 +142,17 @@ export interface UiStrings {
     resume: string;
     /** Screen-reader-only qualifier on the CV link; the size is appended at build time. */
     resumeHint: string;
+  };
+  /** Chrome for the shipped-apps section. */
+  apps: {
+    /** Standfirst under the heading, explaining what separates this from Projects. */
+    intro: string;
+    /** Column label over the platform/store column. */
+    availability: string;
+    appStore: string;
+    googlePlay: string;
+    /** Link through to the app's case study, where one exists. */
+    caseStudy: string;
   };
   /** Chrome for the project case-study route. */
   project: {
@@ -183,4 +195,50 @@ export interface About {
     /** As printed on the CV, scale included — "7.1/10.0" reads differently from "7.1". */
     gpa: string;
   };
+}
+
+/**
+ * A store the app is published on.
+ *
+ * `url` is REQUIRED, which is the constraint that matters here: a store row
+ * exists only when there is an address that has been opened and seen to work.
+ * The alternative — a row naming a store with no link — is what the CV does,
+ * and the CV's own App Store link 404s. The app's absence from this list is a
+ * better answer than a dead link in it.
+ *
+ * The store key itself is optional on `AppListing`, because an app genuinely
+ * can ship to one platform only (Panda is iOS).
+ */
+export interface AppStoreListing {
+  /** A URL confirmed to load. Never construct an App Store URL — see content/apps.ts. */
+  url: string;
+  /** The store's own identifier: a numeric track id on Apple, a package name on Google. */
+  id: string;
+}
+
+/**
+ * A published mobile app.
+ *
+ * Distinct from `Project` on purpose: a project is a body of work, an app is a
+ * thing a stranger can install. Three of the entries in projects.ts shipped to
+ * a public store and that fact lived nowhere on the site — it was buried inside
+ * case-study prose, where it reads as a claim rather than as something testable.
+ */
+export interface AppListing {
+  /** Stable key; matches `projectSlug` where a case study exists. */
+  slug: string;
+  /** The name as it appears on the store, not the internal project name. */
+  name: string;
+  /** One line on what the app does, for someone who will never open the case study. */
+  blurb: string;
+  /** Who it is for — the single word that makes the blurb land. */
+  audience: string;
+  /** Platforms shipped to, in listing order. */
+  platforms: ("iOS" | "Android")[];
+  appStore?: AppStoreListing;
+  googlePlay?: AppStoreListing;
+  /** Slug in projects.ts, when the app has a case study. */
+  projectSlug?: string;
+  /** The stack as it pertains to the SHIPPED app, narrower than the project's. */
+  stack: string[];
 }

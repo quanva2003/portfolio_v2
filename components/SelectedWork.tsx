@@ -7,8 +7,15 @@ import { projectPath } from "@/lib/transition";
 
 /*
  * Asymmetric work grid: the flagship spans the full row with widescreen media;
- * the remaining three take decreasing column spans (5 / 4 / 3) on desktop
- * and collapse to a single column below lg.
+ * the supporting cards take decreasing column spans on desktop and collapse to
+ * a single column below lg.
+ *
+ * The spans are an explicit list, one per supporting card, NOT a repeating
+ * cycle. 5 / 4 / 3 fills the first twelve-column row exactly; the fourth card
+ * opens the next row at 5, matching the first so the two rows read as one
+ * rhythm rather than as a row and a leftover. A modular `i % spans.length`
+ * happens to produce the same number today and would silently produce a
+ * ragged row the moment a fifth card lands — the array is the decision.
  *
  * One animation owner per element (the Phase 3 rule), applied to Phase 5's
  * route morph: [data-reveal] sits on the copy blocks, never on an ancestor of
@@ -18,7 +25,15 @@ import { projectPath } from "@/lib/transition";
  * media frame belongs to the route morph, the copy belongs to the scroll
  * reveal, and neither touches the other.
  */
-const SUPPORT_SPANS = ["lg:col-span-5", "lg:col-span-4", "lg:col-span-3"] as const;
+const SUPPORT_SPANS = [
+  "lg:col-span-5",
+  "lg:col-span-4",
+  "lg:col-span-3",
+  "lg:col-span-5",
+] as const;
+
+/** Anything beyond the explicit list falls back to a half row rather than a stray span. */
+const SUPPORT_SPAN_FALLBACK = "lg:col-span-6";
 
 /*
  * One link per card, expanded to the whole card by an ::after overlay rather
@@ -125,7 +140,7 @@ export default function SelectedWork() {
           </li>
         ))}
         {support.map((project, i) => (
-          <li key={project.slug} className={SUPPORT_SPANS[i % SUPPORT_SPANS.length]}>
+          <li key={project.slug} className={SUPPORT_SPANS[i] ?? SUPPORT_SPAN_FALLBACK}>
             <SupportCard project={project} />
           </li>
         ))}

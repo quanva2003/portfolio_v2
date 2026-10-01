@@ -26,14 +26,14 @@ export const experience: ExperienceEntry[] = [
     summary:
       "Shipped production features across web, tablet and mobile: real-time ERP, logistics dispatch and multi-tenant platforms.",
     highlights: [
-      "Shipped features across web, tablet and mobile for three live products, in teams of three to seven engineers, scoping requirements directly with the PM and the client.",
+      "Shipped features across web, tablet and mobile for four live products, in teams of three to seven engineers, scoping requirements directly with the PM and the client.",
       "Owned features end to end — UI architecture, typed API integration, real-time state, and the follow-up defects — rather than picking up isolated tickets.",
       "Worked repeatedly on the hard edge of real-time interfaces: keeping local state correct when socket payloads arrive incomplete, out of order, or while the user is mid-edit.",
       "Introduced and standardised shared foundations — a state layer, a generated API client, reusable components and a documented component standard — and reviewed teammates' pull requests.",
       "Onboarded new front-end developers and coordinated weekly delivery across concurrent projects.",
     ],
     stack: ["React", "React Native", "TypeScript", "Zustand", "Socket.IO", "Ant Design", "Vite"],
-    projects: ["tamda-shipment", "panda-erp", "skyline"],
+    projects: ["tamda-shipment", "panda-erp", "skyline", "vncaps"],
   },
   {
     company: "General Era Digital Solution JSC",

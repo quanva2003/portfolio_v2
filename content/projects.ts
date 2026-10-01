@@ -180,6 +180,49 @@ export const projects: Project[] = [
     mediaKind: "screenshot",
   },
   {
+    slug: "vncaps",
+    name: "VNCaps",
+    summary:
+      "A parent's view of the school day: timetable, health updates and the classroom photo feed.",
+    description:
+      "A cross-platform app that lets parents follow their child's school day — the timetable, health-status updates from the school, and the photo feed homeroom teachers post from the classroom. Published on both iOS and Android from one React Native codebase, with the interface deliberately held simple for parents who are not comfortable with software.",
+    role: "Mobile Developer",
+    stack: ["React Native", "Expo", "TypeScript", "NativeWind", "Zustand", "UI Kitten"],
+    highlights: [
+      "Primary mobile engineer on the client, across both platforms",
+      "Push notifications and deep links, so a post opens on the thing it is about",
+      "An interface held simple on purpose, for non-technical parents",
+    ],
+    flagship: false,
+    order: 4,
+    detail: {
+      problem:
+        "A parent's real question about a school day is small and constant — was the timetable changed, is my child unwell, what did the class actually do today — and it is the kind of question that is too minor to telephone the school about and too important to leave unanswered. The people asking it are also the least likely group to tolerate a complicated app: a parent checks this in a few seconds between other things, on whatever phone they already own. VNCaps had to answer those questions on both platforms without ever asking the parent to learn anything.",
+      shipped: [
+        "The app client as the primary mobile engineer — screen UI, navigation, and the REST API integration behind every surface.",
+        "The school-day surfaces: the timetable, the health-status updates the school posts, and the classroom photo feed from homeroom teachers.",
+        "Push notifications through Expo, so an update reaches a parent who does not have the app open, and deep links so tapping one lands on the item it refers to rather than the home screen.",
+        "A NativeWind styling layer and Zustand for session and app state, shared in approach with the other school app so one set of conventions covers both.",
+        "Release engineering through EAS Build and OTA updates, shipping iOS and Android fixes without waiting on a full store resubmission.",
+      ],
+      results: [
+        "Published on both the App Store and Google Play from a single TypeScript codebase.",
+        "The small daily questions — timetable, health, what happened in class — are answered in the app instead of over a phone call.",
+        "Fixes reach parents over the air, so a defect does not wait on a review queue.",
+      ],
+    },
+    /*
+     * No imagery. The app is published, but nothing in `design/source/` is a
+     * capture of it, and the screens that would be worth showing are exactly
+     * the ones carrying children's names, photographs and health status. An
+     * empty array is a supported state (see `Project.media`) and renders the
+     * typographic tile — which is the correct outcome here rather than a
+     * temporary one.
+     */
+    media: [],
+    mediaKind: "screenshot",
+  },
+  {
     slug: "comzone",
     name: "Comzone",
     summary: "Comic marketplace with real-time auctions, built as a university capstone.",
@@ -192,7 +235,7 @@ export const projects: Project[] = [
       "VNPay / ZaloPay payments and GHN shipping integration",
     ],
     flagship: false,
-    order: 4,
+    order: 5,
     detail: {
       problem:
         "Collectors trade comics on auction, and an auction is the one commerce flow where latency is the product: a bid that shows up a few seconds late is a bid that lost for the wrong reason. Comzone — my university capstone — had to carry a live auction, real Vietnamese payment rails and real shipping, end to end, not as a mock.",
